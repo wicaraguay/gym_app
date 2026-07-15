@@ -1,0 +1,87 @@
+# Produccion — trainingloja
+# Corre en el VPS, usando las etapas "production" de los Dockerfiles.
+# La web se publica en el puerto 8080. La api y la db NO se exponen a internet.
+# Levantar con:  docker compose -f docker-compose.prod.yml up -d --build
+
+name: trainingloja
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: trainingloja_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    # Sin 'ports' -> la base NO es accesible desde internet.
+
+  api:
+    build:
+      context: ./api
+      target: production
+    container_name: trainingloja_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES: ${JWT_EXPIRES}
+      PORT: 3000
+    # Sincroniza el esquema con la DB (prisma db push) y arranca el server.
+    command: sh -c "npx prisma db push --skip-generate && node dist/main.js"
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    # Sin 'ports' -> la api solo la alcanza el nginx de la web, por red interna.
+
+  web:
+    build:
+      context: ./web
+      target: production
+      args:
+        # Vacia -> la web usa /api relativo y nginx lo rutea al backend.
+        VITE_API_URL: ""
+    container_name: trainingloja_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    networks:
+      - internal
+      - shared_web
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+volumes:
+  db_data:
+
+networks:
+  # Red privada de trainingloja (db <-> api <-> web). No sale a internet.
+  internal:
+  # Red compartida para el FUTURO Caddy. Se crea una sola vez con:
+  #   docker network create shared_web
+  shared_web:
+    external: true
+    name: shared_web
