@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/
 
+# Backups de la base (se generan en el VPS, no se suben)
+backups/
+
 # Entorno (contiene secretos)
 .env
 .env.*

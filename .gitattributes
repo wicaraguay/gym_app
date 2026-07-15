@@ -1,0 +1,3 @@
+# Los scripts de shell SIEMPRE con saltos de linea LF.
+# Si se suben con CRLF (Windows), fallan en Linux con "bad interpreter".
+*.sh text eol=lf
