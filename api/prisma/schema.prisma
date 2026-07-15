@@ -1,0 +1,141 @@
+// Esquema de datos - CrossFit (monolito modular)
+// El corazon del dominio: Plan -> Membership (con precio congelado) -> Payment (abonos) -> Invoice
+
+generator client {
+  provider      = "prisma-client-js"
+  // "native" para tu maquina; el musl-openssl-3 para el contenedor Alpine
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Roles / Autenticacion ----------
+enum Role {
+  ADMIN
+  RECEPCIONISTA
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  cedula       String?
+  address      String?
+  role         Role      @default(RECEPCIONISTA)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  payments     Payment[]
+}
+
+// ---------- Clientes ----------
+enum IdentificationType {
+  CEDULA
+  RUC
+  PASAPORTE
+  CONSUMIDOR_FINAL
+}
+
+model Member {
+  id                 String             @id @default(uuid())
+  identificationType IdentificationType @default(CEDULA)
+  identification     String             @unique
+  firstName          String
+  lastName           String
+  email              String?
+  phone              String?
+  address            String?
+  active             Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  memberships        Membership[]
+}
+
+// ---------- Planes (precio editable por admin) ----------
+model Plan {
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+  price          Decimal      @db.Decimal(10, 2)
+  durationDays   Int          @default(30) // usado si durationMonths = 0
+  durationMonths Int          @default(0) // si > 0, la duracion es en meses de calendario
+  active         Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+}
+
+// ---------- Membresia / Periodo mensual ----------
+enum MembershipStatus {
+  PENDIENTE
+  PAGADO
+  VENCIDO
+}
+
+model Membership {
+  id            String           @id @default(uuid())
+  member        Member           @relation(fields: [memberId], references: [id])
+  memberId      String
+  plan          Plan             @relation(fields: [planId], references: [id])
+  planId        String
+  priceSnapshot Decimal          @db.Decimal(10, 2) // precio CONGELADO al inscribir
+  startDate     DateTime
+  endDate       DateTime
+  balance       Decimal          @db.Decimal(10, 2) // saldo pendiente
+  status        MembershipStatus @default(PENDIENTE)
+  frozenDays    Int              @default(0) // dias congelados acumulados
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  payments      Payment[]
+  freezes       MembershipFreeze[]
+}
+
+// ---------- Congelamientos de membresia (auditoria) ----------
+model MembershipFreeze {
+  id           String     @id @default(uuid())
+  membership   Membership @relation(fields: [membershipId], references: [id])
+  membershipId String
+  days         Int
+  reason       String?
+  bulk         Boolean    @default(false) // true si vino de un congelamiento masivo
+  batchId      String? // agrupa los registros de un mismo masivo (para revertirlo)
+  createdById  String // id del usuario que lo registro
+  createdAt    DateTime   @default(now())
+
+  @@index([batchId])
+}
+
+// ---------- Pagos / Abonos ----------
+enum PaymentMethod {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  membership     Membership    @relation(fields: [membershipId], references: [id])
+  membershipId   String
+  amount         Decimal       @db.Decimal(10, 2)
+  method         PaymentMethod @default(EFECTIVO)
+  paidAt         DateTime      @default(now())
+  registeredBy   User          @relation(fields: [registeredById], references: [id])
+  registeredById String
+  createdAt      DateTime      @default(now())
+}
+
+// ---------- Configuracion del negocio (singleton) ----------
+model Settings {
+  id           String   @id @default("singleton")
+  businessName String   @default("Mi Box CrossFit") // nombre comercial
+  ownerName    String   @default("") // nombre del titular
+  ruc          String? // RUC
+  address      String? // direccion
+  logoUrl      String?
+  photoUrl     String?
+  updatedAt    DateTime @updatedAt
+}

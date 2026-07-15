@@ -1,0 +1,29 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+build/
+
+# Entorno (contiene secretos)
+.env
+.env.*
+!.env.example
+
+# Herramientas de IA / asistentes (no subir)
+.atl/
+.claude/
+CLAUDE.md
+AGENTS.md
+
+# Expo (cache local)
+.expo/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
