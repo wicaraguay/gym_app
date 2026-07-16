@@ -15,6 +15,8 @@ interface ConfirmOptions {
   confirmText?: string;
   cancelText?: string;
   tone?: 'default' | 'danger';
+  // Oculta el boton Cancelar: convierte el modal en una ventana de solo aviso.
+  hideCancel?: boolean;
 }
 
 type Resolver = (value: boolean) => void;
@@ -92,9 +94,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-5">
-              <Button variant="ghost" size="sm" onClick={() => close(false)}>
-                {opts.cancelText || 'Cancelar'}
-              </Button>
+              {!opts.hideCancel && (
+                <Button variant="ghost" size="sm" onClick={() => close(false)}>
+                  {opts.cancelText || 'Cancelar'}
+                </Button>
+              )}
               <Button
                 variant={danger ? 'danger' : 'primary'}
                 size="sm"

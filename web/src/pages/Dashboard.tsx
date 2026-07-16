@@ -63,6 +63,22 @@ export function Dashboard() {
   const doFreezeAll = async () => {
     const days = Number(mafDays);
     if (!days || days <= 0) return;
+
+    // Sin membresias vigentes no hay nada que congelar: avisamos y salimos,
+    // en vez de pedir confirmar y despues reportar "0 congeladas".
+    const activasCount =
+      (data?.paidMemberships ?? 0) + (data?.pendingMemberships ?? 0);
+    if (activasCount === 0) {
+      await confirm({
+        title: 'No hay clientes para congelar',
+        message:
+          'En este momento no tienes clientes con una membresia activa. El congelamiento masivo corre el vencimiento de las membresias vigentes, y ahora no hay ninguna.',
+        confirmText: 'Entendido',
+        hideCancel: true,
+      });
+      return;
+    }
+
     const ok = await confirm({
       title: 'Congelamiento masivo',
       message: `Congelar ${days} dias a TODAS las membresias activas? Corre el vencimiento de todos.`,
@@ -76,6 +92,17 @@ export function Dashboard() {
         days,
         reason: mafReason || undefined,
       });
+      // Red de seguridad: el backend no encontro vigentes (p. ej. todas futuras).
+      if (res.data.affected === 0) {
+        await confirm({
+          title: 'No hay clientes para congelar',
+          message:
+            'No se encontraron membresias vigentes para congelar en este momento.',
+          confirmText: 'Entendido',
+          hideCancel: true,
+        });
+        return;
+      }
       setMafMsg(`Listo: ${res.data.affected} membresia(s) congelada(s) ${days} dias.`);
       setMafDays('');
       setMafReason('');
