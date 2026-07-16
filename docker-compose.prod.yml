@@ -39,9 +39,12 @@ services:
       db:
         condition: service_healthy
     environment:
+      NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES: ${JWT_EXPIRES}
+      # Dominios permitidos para CORS (separados por coma). Vacio = permite todo.
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       PORT: 3000
     # Sincroniza el esquema con la DB (prisma db push) y arranca el server.
     command: sh -c "npx prisma db push --skip-generate && node dist/main.js"
