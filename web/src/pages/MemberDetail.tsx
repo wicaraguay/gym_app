@@ -21,7 +21,15 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { emitRefresh } from '../lib/events';
-import { validateAmount } from '../lib/validation';
+import {
+  validateAmount,
+  validateIdentification,
+  validateEmail,
+  validatePhone,
+  validateDays,
+  splitFullName,
+  firstError,
+} from '../lib/validation';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { Card } from '../components/ui/Card';
@@ -94,6 +102,9 @@ export function MemberDetail() {
   const [customDate, setCustomDate] = useState('');
   const [abono, setAbono] = useState<Record<string, string>>({});
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [savingMemId, setSavingMemId] = useState<string | null>(null);
+  const [freezingBusy, setFreezingBusy] = useState(false);
   const [method, setMethod] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [freezingId, setFreezingId] = useState<string | null>(null);
@@ -125,22 +136,34 @@ export function MemberDetail() {
   };
 
   const saveEdit = async () => {
-    const tokens = editForm.fullName.trim().split(/\s+/).filter(Boolean);
-    const mid = Math.max(1, Math.ceil(tokens.length / 2));
+    const name = splitFullName(editForm.fullName);
+    const err = firstError(
+      name ? null : 'Escribi nombre y apellido (al menos dos palabras).',
+      validateIdentification(editForm.identification, editForm.identificationType),
+      validatePhone(editForm.phone || ''),
+      validateEmail(editForm.email || '', true),
+    );
+    if (err) {
+      setError(err);
+      return;
+    }
     setError('');
+    setSavingEdit(true);
     try {
       await api.patch(`/members/${id}`, {
-        firstName: tokens.slice(0, mid).join(' '),
-        lastName: tokens.slice(mid).join(' '),
+        firstName: name!.firstName,
+        lastName: name!.lastName,
         identificationType: editForm.identificationType,
-        identification: editForm.identification,
-        phone: editForm.phone || undefined,
-        email: editForm.email || undefined,
+        identification: editForm.identification.trim(),
+        phone: (editForm.phone || '').trim() || undefined,
+        email: (editForm.email || '').trim() || undefined,
       });
       setEditing(false);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'No se pudo guardar');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -199,7 +222,18 @@ export function MemberDetail() {
   };
 
   const saveEditMem = async (m: any) => {
+    // Cambiar una membresia con pagos recalcula precio/vencimiento: confirmar.
+    if ((m.payments?.length || 0) > 0) {
+      const ok = await confirm({
+        title: 'Cambiar la membresia',
+        message: `Esta membresia ya tiene ${m.payments.length} pago(s). Cambiar el plan o la cantidad recalcula el precio y el vencimiento. Continuar?`,
+        confirmText: 'Cambiar',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
     setError('');
+    setSavingMemId(m.id);
     try {
       await api.patch(`/memberships/${m.id}`, {
         planId: editMemForm.planId,
@@ -209,6 +243,8 @@ export function MemberDetail() {
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'No se pudo editar la membresia');
+    } finally {
+      setSavingMemId(null);
     }
   };
 
@@ -264,16 +300,22 @@ export function MemberDetail() {
   };
 
   const freezeMembership = async (membershipId: string) => {
-    const days = Number(freezeVal);
-    if (!days || days <= 0) return;
+    const err = validateDays(freezeVal);
+    if (err) {
+      setError(err);
+      return;
+    }
     setError('');
+    setFreezingBusy(true);
     try {
-      await api.post(`/memberships/${membershipId}/freeze`, { days });
+      await api.post(`/memberships/${membershipId}/freeze`, { days: Number(freezeVal) });
       setFreezingId(null);
       setFreezeVal('');
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'No se pudo congelar');
+    } finally {
+      setFreezingBusy(false);
     }
   };
 
@@ -438,7 +480,9 @@ export function MemberDetail() {
           </div>
           {error && <p className="text-danger text-sm mt-2">{error}</p>}
           <div className="flex gap-2 mt-3">
-            <Button onClick={saveEdit}>Guardar</Button>
+            <Button onClick={saveEdit} disabled={savingEdit}>
+              {savingEdit ? 'Guardando...' : 'Guardar'}
+            </Button>
             <Button variant="ghost" onClick={() => setEditing(false)}>
               Cancelar
             </Button>
@@ -686,8 +730,12 @@ export function MemberDetail() {
                         />
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => freezeMembership(m.id)}>
-                          Confirmar
+                        <Button
+                          size="sm"
+                          onClick={() => freezeMembership(m.id)}
+                          disabled={freezingBusy}
+                        >
+                          {freezingBusy ? 'Congelando...' : 'Confirmar'}
                         </Button>
                         <Button
                           variant="ghost"
@@ -829,8 +877,12 @@ export function MemberDetail() {
                               </option>
                             ))}
                           </select>
-                          <Button size="sm" onClick={() => saveEditMem(m)}>
-                            Guardar
+                          <Button
+                            size="sm"
+                            onClick={() => saveEditMem(m)}
+                            disabled={savingMemId === m.id}
+                          >
+                            {savingMemId === m.id ? 'Guardando...' : 'Guardar'}
                           </Button>
                           <Button
                             variant="ghost"

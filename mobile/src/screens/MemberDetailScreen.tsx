@@ -13,7 +13,14 @@ import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { Screen, Card, Badge, Button, Field, ErrorText, Chip } from '../ui';
-import { validateAmount } from '../validation';
+import {
+  validateAmount,
+  validateDays,
+  validateEmail,
+  validatePhone,
+  splitFullName,
+  firstError,
+} from '../validation';
 import { C } from '../theme';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -89,12 +96,15 @@ export function MemberDetailScreen() {
 
   // Congelar: solo la membresia VIGENTE (el backend rechaza en cola/vencida).
   const freeze = async (mem: any) => {
-    const days = Number(freezeVal[mem.id]);
-    if (!days || days <= 0) return;
+    const err = validateDays(freezeVal[mem.id] || '');
+    if (err) {
+      setError(err);
+      return;
+    }
     setError('');
     setBusy(true);
     try {
-      await api.post(`/memberships/${mem.id}/freeze`, { days });
+      await api.post(`/memberships/${mem.id}/freeze`, { days: Number(freezeVal[mem.id]) });
       setFreezeVal({ ...freezeVal, [mem.id]: '' });
       load();
     } catch (e: any) {
@@ -138,20 +148,31 @@ export function MemberDetailScreen() {
     setEditOpen(true);
   };
   const saveMember = async () => {
+    const name = splitFullName(editForm.name);
+    const e2 = firstError(
+      name ? null : 'Escribi nombre y apellido (al menos dos palabras).',
+      validatePhone(editForm.phone || ''),
+      validateEmail(editForm.email || '', true),
+    );
+    if (e2) {
+      setError(e2);
+      return;
+    }
     setError('');
-    const tokens = editForm.name.trim().split(/\s+/).filter(Boolean);
-    const mid = Math.max(1, Math.ceil(tokens.length / 2));
+    setBusy(true);
     try {
       await api.patch(`/members/${id}`, {
-        firstName: tokens.slice(0, mid).join(' '),
-        lastName: tokens.slice(mid).join(' '),
-        phone: editForm.phone || undefined,
-        email: editForm.email || undefined,
+        firstName: name!.firstName,
+        lastName: name!.lastName,
+        phone: (editForm.phone || '').trim() || undefined,
+        email: (editForm.email || '').trim() || undefined,
       });
       setEditOpen(false);
       load();
     } catch (e: any) {
       setError(e?.response?.data?.message || 'No se pudo guardar');
+    } finally {
+      setBusy(false);
     }
   };
   const toggleActive = async () => {
@@ -198,16 +219,34 @@ export function MemberDetailScreen() {
     setEditMemId(editMemId === m.id ? null : m.id);
   };
   const saveEditMem = async (m: any) => {
-    setError('');
-    try {
-      await api.patch(`/memberships/${m.id}`, {
-        planId: editMemForm.planId,
-        quantity: editMemForm.quantity,
-      });
-      setEditMemId(null);
-      load();
-    } catch (e: any) {
-      setError(e?.response?.data?.message || 'No se pudo editar');
+    const doSave = async () => {
+      setError('');
+      setBusy(true);
+      try {
+        await api.patch(`/memberships/${m.id}`, {
+          planId: editMemForm.planId,
+          quantity: editMemForm.quantity,
+        });
+        setEditMemId(null);
+        load();
+      } catch (e: any) {
+        setError(e?.response?.data?.message || 'No se pudo editar');
+      } finally {
+        setBusy(false);
+      }
+    };
+    // Cambiar una membresia con pagos recalcula precio/vencimiento: confirmar.
+    if ((m.payments?.length || 0) > 0) {
+      Alert.alert(
+        'Cambiar la membresia',
+        `Esta membresia ya tiene ${m.payments.length} pago(s). Cambiar el plan o la cantidad recalcula el precio y el vencimiento. Continuar?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Cambiar', style: 'destructive', onPress: doSave },
+        ],
+      );
+    } else {
+      doSave();
     }
   };
   const deleteMembership = (m: any) => {
@@ -464,7 +503,7 @@ export function MemberDetailScreen() {
                       ))}
                     </View>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <Button title="Guardar" onPress={() => saveEditMem(m)} style={{ flex: 1 }} />
+                      <Button title="Guardar" onPress={() => saveEditMem(m)} loading={busy} style={{ flex: 1 }} />
                       <Button title="Cancelar" variant="ghost" onPress={() => setEditMemId(null)} style={{ flex: 1 }} />
                     </View>
                   </View>
@@ -499,7 +538,7 @@ export function MemberDetailScreen() {
             <Field label="Telefono" value={editForm.phone} onChangeText={(t) => setEditForm({ ...editForm, phone: t })} keyboardType="phone-pad" />
             <Field label="Email" value={editForm.email} onChangeText={(t) => setEditForm({ ...editForm, email: t })} keyboardType="email-address" autoCapitalize="none" />
             <ErrorText>{error}</ErrorText>
-            <Button title="Guardar" onPress={saveMember} />
+            <Button title="Guardar" onPress={saveMember} loading={busy} />
             <Button title="Cancelar" variant="ghost" onPress={() => setEditOpen(false)} style={{ marginTop: 8 }} />
           </View>
         </View>
