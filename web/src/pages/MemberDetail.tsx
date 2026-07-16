@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   AlertCircle,
   MessageCircle,
-  Mail,
   Snowflake,
   X,
   ChevronDown,
@@ -21,6 +20,12 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { emitRefresh } from '../lib/events';
+import {
+  getReminderKind,
+  reminderLabel,
+  buildReminderMessage,
+  whatsappUrl,
+} from '../lib/whatsapp';
 import {
   validateAmount,
   validateIdentification,
@@ -117,12 +122,18 @@ export function MemberDetail() {
   const [showQueue, setShowQueue] = useState(false);
   const [editMemId, setEditMemId] = useState<string | null>(null);
   const [editMemForm, setEditMemForm] = useState({ planId: '', quantity: '1' });
+  const [businessName, setBusinessName] = useState('');
 
   const load = () => api.get(`/members/${id}`).then((r) => setMember(r.data));
 
   useEffect(() => {
     load();
     api.get('/plans').then((r) => setPlans(r.data));
+    // Nombre del negocio para pre-armar el mensaje de WhatsApp (endpoint publico).
+    api
+      .get('/settings/public')
+      .then((r) => setBusinessName(r.data.businessName || ''))
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -419,6 +430,22 @@ export function MemberDetail() {
             new Date(b.endDate).getTime() - new Date(a.endDate).getTime(),
         )[0]
     : undefined;
+
+  // Mensaje de WhatsApp pre-armado segun el ESTADO de la membresia del cliente
+  // (saldo / vencida / por vencer / al dia / sin membresia). Solo pre-llena;
+  // el dueno revisa y envia.
+  const reminderInput = {
+    firstName: member.firstName,
+    businessName,
+    saldoTotal,
+    activeEndDate: activeMembership?.endDate ?? null,
+    lastExpiredEndDate: lastExpired?.endDate ?? null,
+    hasAnyMembership: memberships.length > 0,
+  };
+  const reminderKind = getReminderKind(reminderInput);
+  const waUrl = waPhone
+    ? whatsappUrl(waPhone, buildReminderMessage(reminderInput, reminderKind))
+    : '';
 
   // Opciones de "empieza a contar" al inscribir sin membresia vigente.
   // "Al vencer" solo tiene sentido si hay una vencida detras (renovacion).
@@ -1226,29 +1253,20 @@ export function MemberDetail() {
             </div>
           </Card>
 
-          {(member.phone || member.email) && (
+          {waPhone && (
             <Card className="p-4 sm:p-5">
               <p className="text-sm font-medium text-white mb-3">Contacto</p>
-              <div className="space-y-2">
-                {waPhone && (
-                  <a
-                    href={`https://wa.me/${waPhone}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-success/10 text-success border border-success/30 hover:bg-success/20 transition-all"
-                  >
-                    <MessageCircle size={16} /> WhatsApp
-                  </a>
-                )}
-                {member.email && (
-                  <a
-                    href={`mailto:${member.email}`}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-line text-slate-300 hover:bg-white/5 transition-all"
-                  >
-                    <Mail size={16} /> Enviar email
-                  </a>
-                )}
-              </div>
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-success/10 text-success border border-success/30 hover:bg-success/20 transition-all"
+              >
+                <MessageCircle size={16} /> Enviar WhatsApp
+              </a>
+              <p className="text-[11px] text-slate-500 mt-1 text-center">
+                Mensaje segun estado: {reminderLabel(reminderKind)}
+              </p>
             </Card>
           )}
         </div>

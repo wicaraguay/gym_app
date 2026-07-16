@@ -7,6 +7,7 @@ import {
   Alert,
   Modal,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
@@ -21,6 +22,12 @@ import {
   splitFullName,
   firstError,
 } from '../validation';
+import {
+  getReminderKind,
+  reminderLabel,
+  buildReminderMessage,
+  whatsappUrl,
+} from '../whatsapp';
 import { C } from '../theme';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -57,6 +64,7 @@ export function MemberDetailScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [editMemId, setEditMemId] = useState<string | null>(null);
   const [editMemForm, setEditMemForm] = useState({ planId: '', quantity: 1 });
+  const [businessName, setBusinessName] = useState('');
 
   const load = useCallback(() => {
     api.get(`/members/${id}`).then((r) => setMember(r.data)).catch(() => {});
@@ -65,6 +73,8 @@ export function MemberDetailScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
   useEffect(() => {
     api.get('/plans').then((r) => setPlans(r.data)).catch(() => {});
+    // Nombre del negocio para pre-armar el mensaje de WhatsApp.
+    api.get('/settings/public').then((r) => setBusinessName(r.data.businessName || '')).catch(() => {});
   }, []);
 
   const cobrar = async (mem: any) => {
@@ -298,6 +308,29 @@ export function MemberDetailScreen() {
         )[0]
     : undefined;
 
+  // WhatsApp pre-armado segun el estado de la membresia del cliente.
+  const saldoTotal = (member.memberships || []).reduce(
+    (sum: number, m: any) =>
+      sum + (m.status !== 'PAGADO' ? Number(m.balance) : 0),
+    0,
+  );
+  const waDigits = (member.phone || '').replace(/\D/g, '');
+  const waPhone = waDigits
+    ? waDigits.startsWith('0')
+      ? '593' + waDigits.slice(1)
+      : waDigits
+    : '';
+  const reminderInput = {
+    firstName: member.firstName,
+    businessName,
+    saldoTotal,
+    activeEndDate: activeMembership?.endDate ?? null,
+    lastExpiredEndDate: lastExpired?.endDate ?? null,
+    hasAnyMembership: (member.memberships || []).length > 0,
+  };
+  const reminderKind = getReminderKind(reminderInput);
+  const waMessage = buildReminderMessage(reminderInput, reminderKind);
+
   // Ordena: Vigente (la que vence antes) primero, luego En cola, luego Vencidas.
   const ORDER: Record<string, number> = { Vigente: 0, 'En cola': 1, Vencida: 2 };
   const memberships: any[] = [...(member.memberships || [])].sort((a, b) => {
@@ -344,6 +377,28 @@ export function MemberDetailScreen() {
           />
         )}
       </View>
+
+      {waPhone ? (
+        <TouchableOpacity
+          onPress={() => Linking.openURL(whatsappUrl(waPhone, waMessage))}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            marginTop: 8,
+            paddingVertical: 11,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: C.success + '55',
+            backgroundColor: C.success + '18',
+          }}
+        >
+          <Text style={{ color: C.success, fontWeight: '700' }}>
+            Enviar WhatsApp · {reminderLabel(reminderKind)}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       {error ? <Text style={{ color: C.danger, marginTop: 8 }}>{error}</Text> : null}
 
