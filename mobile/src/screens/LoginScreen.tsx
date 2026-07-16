@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../AuthContext';
-import { Field, Button, ErrorText } from '../ui';
+import { Field, Button, ErrorText, PasswordField } from '../ui';
 import { C } from '../theme';
 
 export function LoginScreen() {
@@ -43,11 +43,10 @@ export function LoginScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
         />
-        <Field
+        <PasswordField
           label="Contraseña"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
         />
         <ErrorText>{error}</ErrorText>
         <Button title="Ingresar" onPress={submit} loading={loading} />

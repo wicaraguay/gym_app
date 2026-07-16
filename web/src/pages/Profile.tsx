@@ -10,8 +10,10 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
+import { PasswordInput } from '../components/ui/PasswordInput';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { FieldHint } from '../components/ui/FieldHint';
 
 export function Profile() {
   const { user, refreshUser } = useAuth();
@@ -147,6 +149,11 @@ export function Profile() {
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 required
               />
+              <FieldHint
+                value={form.email}
+                validate={(v) => validateEmail(v)}
+                ok="Email valido."
+              />
             </div>
             <div>
               <label className="text-xs text-slate-400 mb-1 block">
@@ -179,8 +186,7 @@ export function Profile() {
               <label className="text-xs text-slate-400 mb-1 block">
                 Contrasena actual
               </label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={pw.currentPassword}
                 onChange={(e) =>
                   setPw({ ...pw, currentPassword: e.target.value })
@@ -192,22 +198,31 @@ export function Profile() {
               <label className="text-xs text-slate-400 mb-1 block">
                 Nueva contrasena (min. 6)
               </label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={pw.newPassword}
                 onChange={(e) => setPw({ ...pw, newPassword: e.target.value })}
                 required
+              />
+              <FieldHint
+                value={pw.newPassword}
+                validate={(v) => validatePassword(v)}
+                ok="Contrasena valida."
+                hint="Minimo 6 caracteres."
               />
             </div>
             <div>
               <label className="text-xs text-slate-400 mb-1 block">
                 Repetir nueva contrasena
               </label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={pw.confirm}
                 onChange={(e) => setPw({ ...pw, confirm: e.target.value })}
                 required
+              />
+              <FieldHint
+                value={pw.confirm}
+                validate={(v) => (v === pw.newPassword ? null : 'Las contrasenas no coinciden.')}
+                ok="Coincide."
               />
             </div>
             {pwErr && <p className="text-danger text-sm">{pwErr}</p>}

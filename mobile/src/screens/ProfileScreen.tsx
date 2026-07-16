@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { Screen, Title, Card, Button, Field, ErrorText, OkText } from '../ui';
+import { Screen, Title, Card, Button, Field, ErrorText, OkText, FieldHint, PasswordField } from '../ui';
 import {
   validateEmail,
   validateRequired,
@@ -93,6 +93,7 @@ export function ProfileScreen() {
         <Field label="Nombre completo" value={form.name} onChangeText={(t) => setForm({ ...form, name: t })} />
         <Field label="Cedula" value={form.cedula} onChangeText={(t) => setForm({ ...form, cedula: t })} keyboardType="numeric" />
         <Field label="Correo" value={form.email} onChangeText={(t) => setForm({ ...form, email: t })} keyboardType="email-address" autoCapitalize="none" />
+        <FieldHint value={form.email} validate={(v) => validateEmail(v)} ok="Email valido." />
         <Field label="Direccion" value={form.address} onChangeText={(t) => setForm({ ...form, address: t })} />
         <ErrorText>{err}</ErrorText>
         <OkText>{okMsg}</OkText>
@@ -101,9 +102,11 @@ export function ProfileScreen() {
 
       <Card>
         <Text style={{ color: C.text, fontWeight: '700', marginBottom: 10 }}>Cambiar contraseña</Text>
-        <Field label="Contraseña actual" value={pw.currentPassword} onChangeText={(t) => setPw({ ...pw, currentPassword: t })} secureTextEntry />
-        <Field label="Nueva contraseña (min. 6)" value={pw.newPassword} onChangeText={(t) => setPw({ ...pw, newPassword: t })} secureTextEntry />
-        <Field label="Repetir nueva" value={pw.confirm} onChangeText={(t) => setPw({ ...pw, confirm: t })} secureTextEntry />
+        <PasswordField label="Contraseña actual" value={pw.currentPassword} onChangeText={(t) => setPw({ ...pw, currentPassword: t })} />
+        <PasswordField label="Nueva contraseña (min. 6)" value={pw.newPassword} onChangeText={(t) => setPw({ ...pw, newPassword: t })} />
+        <FieldHint value={pw.newPassword} validate={(v) => validatePassword(v)} ok="Contraseña valida." hint="Minimo 6 caracteres." />
+        <PasswordField label="Repetir nueva" value={pw.confirm} onChangeText={(t) => setPw({ ...pw, confirm: t })} />
+        <FieldHint value={pw.confirm} validate={(v) => (v === pw.newPassword ? null : 'Las contraseñas no coinciden.')} ok="Coincide." />
         <ErrorText>{pwErr}</ErrorText>
         <OkText>{pwOk}</OkText>
         <Button title="Actualizar contraseña" onPress={changePassword} loading={savingPw} />

@@ -131,6 +131,7 @@ export function MemberDetail() {
       identification: member.identification,
       phone: member.phone || '',
       email: member.email || '',
+      address: member.address || '',
     });
     setEditing(true);
   };
@@ -157,6 +158,7 @@ export function MemberDetail() {
         identification: editForm.identification.trim(),
         phone: (editForm.phone || '').trim() || undefined,
         email: (editForm.email || '').trim() || undefined,
+        address: (editForm.address || '').trim() || undefined,
       });
       setEditing(false);
       load();
@@ -457,6 +459,18 @@ export function MemberDetail() {
                   setEditForm({ ...editForm, identification: e.target.value })
                 }
               />
+              {editForm.identification.trim() &&
+                validateIdentification(
+                  editForm.identification,
+                  editForm.identificationType,
+                ) && (
+                  <p className="text-danger text-xs mt-1">
+                    {validateIdentification(
+                      editForm.identification,
+                      editForm.identificationType,
+                    )}
+                  </p>
+                )}
             </div>
             <div>
               <label className="text-xs text-slate-400 mb-1 block">Telefono</label>
@@ -474,6 +488,17 @@ export function MemberDetail() {
                 value={editForm.email}
                 onChange={(e) =>
                   setEditForm({ ...editForm, email: e.target.value })
+                }
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs text-slate-400 mb-1 block">
+                Direccion (para facturacion)
+              </label>
+              <Input
+                value={editForm.address}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, address: e.target.value })
                 }
               />
             </div>
@@ -654,7 +679,7 @@ export function MemberDetail() {
                   />
                 </div>
 
-                {m.status !== 'PAGADO' ? (
+                {balance > 0 ? (
                   <div>
                     <p className="text-xs text-slate-400 mb-1.5">
                       Registrar un pago (abono)

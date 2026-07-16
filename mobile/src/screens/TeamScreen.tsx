@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { Screen, Title, Card, Badge, Button, Field, ErrorText, OkText } from '../ui';
+import { Screen, Title, Card, Badge, Button, Field, ErrorText, OkText, FieldHint, PasswordField } from '../ui';
 import {
   validateEmail,
   validateRequired,
@@ -137,11 +137,17 @@ export function TeamScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
         />
-        <Field
+        <FieldHint value={form.email} validate={(v) => validateEmail(v)} ok="Email valido." />
+        <PasswordField
           label="Contraseña (min. 6)"
           value={form.password}
           onChangeText={(t) => setForm({ ...form, password: t })}
-          secureTextEntry
+        />
+        <FieldHint
+          value={form.password}
+          validate={(v) => validatePassword(v)}
+          ok="Contraseña valida."
+          hint="Minimo 6 caracteres."
         />
         <Text style={s.label}>Rol</Text>
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
@@ -204,11 +210,16 @@ export function TeamScreen() {
             )}
             {resetId === u.id && (
               <View style={{ marginTop: 10 }}>
-                <Field
+                <PasswordField
                   value={newPass}
                   onChangeText={setNewPass}
                   placeholder={`Nueva clave para ${u.name}`}
-                  secureTextEntry
+                />
+                <FieldHint
+                  value={newPass}
+                  validate={(v) => validatePassword(v)}
+                  ok="Clave valida."
+                  hint="Minimo 6 caracteres."
                 />
                 <Button title="Guardar clave" onPress={() => saveReset(u)} loading={busy} />
               </View>

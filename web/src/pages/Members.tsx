@@ -7,6 +7,7 @@ import {
   validateEmail,
   validatePhone,
   splitFullName,
+  detectIdType,
   firstError,
 } from '../lib/validation';
 import { Card } from '../components/ui/Card';
@@ -37,6 +38,7 @@ const EMPTY = {
   fullName: '',
   phone: '',
   email: '',
+  address: '',
 };
 
 // Dos dimensiones independientes (vencida / debe) -> hasta dos badges.
@@ -123,6 +125,7 @@ export function Members() {
         lastName: name!.lastName,
         phone: form.phone.trim() || undefined,
         email: form.email.trim() || undefined,
+        address: form.address.trim() || undefined,
       });
       setForm(EMPTY);
       setShowForm(false);
@@ -136,6 +139,12 @@ export function Members() {
 
   const inits = (m: Member) =>
     `${m.firstName[0] ?? ''}${m.lastName[0] ?? ''}`.toUpperCase();
+
+  // Feedback en vivo de la identificacion (cedula vs RUC).
+  const idType = detectIdType(form.identification);
+  const idErr = form.identification.trim()
+    ? validateCedulaOrRuc(form.identification)
+    : null;
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -160,13 +169,40 @@ export function Members() {
       {showForm && (
         <Card className="p-4 sm:p-5 animate-fade-in">
           <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
-            <Input
-              placeholder="Cedula / RUC"
-              inputMode="numeric"
-              value={form.identification}
-              onChange={(e) => setForm({ ...form, identification: e.target.value })}
-              required
-            />
+            {/* Identificacion con deteccion en vivo de cedula / RUC */}
+            <div className="sm:col-span-2">
+              <div className="flex items-center gap-2 mb-1">
+                <label className="text-xs font-medium text-slate-400">
+                  Cedula / RUC
+                </label>
+                {idType && (
+                  <Badge color={idErr ? 'danger' : 'success'}>
+                    {idType === 'CEDULA' ? 'Cedula' : 'RUC'}
+                  </Badge>
+                )}
+              </div>
+              <Input
+                placeholder="Numero de cedula (10) o RUC (13)"
+                inputMode="numeric"
+                value={form.identification}
+                onChange={(e) =>
+                  setForm({ ...form, identification: e.target.value })
+                }
+              />
+              {form.identification.trim() ? (
+                idErr ? (
+                  <p className="text-danger text-xs mt-1">{idErr}</p>
+                ) : (
+                  <p className="text-success text-xs mt-1">
+                    {idType === 'CEDULA' ? 'Cedula valida.' : 'RUC valido.'}
+                  </p>
+                )
+              ) : (
+                <p className="text-slate-500 text-xs mt-1">
+                  Cedula = 10 digitos · RUC = 13 digitos.
+                </p>
+              )}
+            </div>
             <Input
               placeholder="Nombre completo"
               value={form.fullName}
@@ -187,6 +223,12 @@ export function Members() {
               inputMode="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+            <Input
+              placeholder="Direccion (opcional, para facturacion)"
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              className="sm:col-span-2"
             />
             {error && (
               <p className="text-danger text-sm sm:col-span-2">{error}</p>

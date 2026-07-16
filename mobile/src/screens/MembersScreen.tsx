@@ -17,6 +17,7 @@ import {
   validateEmail,
   validatePhone,
   splitFullName,
+  detectIdType,
   firstError,
 } from '../validation';
 import { C, stateColor } from '../theme';
@@ -43,9 +44,21 @@ export function MembersScreen() {
   const [status, setStatus] = useState('TODOS');
   const [total, setTotal] = useState(0);
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ identification: '', name: '', phone: '', email: '' });
+  const [form, setForm] = useState({
+    identification: '',
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+  });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Feedback en vivo de la identificacion (cedula vs RUC).
+  const idType = detectIdType(form.identification);
+  const idErr = form.identification.trim()
+    ? validateCedulaOrRuc(form.identification)
+    : null;
 
   const load = useCallback(() => {
     api
@@ -84,8 +97,9 @@ export function MembersScreen() {
         lastName: name!.lastName,
         phone: form.phone.trim() || undefined,
         email: form.email.trim() || undefined,
+        address: form.address.trim() || undefined,
       });
-      setForm({ identification: '', name: '', phone: '', email: '' });
+      setForm({ identification: '', name: '', phone: '', email: '', address: '' });
       setShowNew(false);
       load();
     } catch (e: any) {
@@ -201,6 +215,22 @@ export function MembersScreen() {
               onChangeText={(t) => setForm({ ...form, identification: t })}
               keyboardType="numeric"
             />
+            <Text
+              style={{
+                color: idErr ? C.danger : idType ? C.success : C.textFaint,
+                fontSize: 12,
+                marginTop: -8,
+                marginBottom: 10,
+              }}
+            >
+              {form.identification.trim()
+                ? idErr
+                  ? idErr
+                  : idType === 'CEDULA'
+                    ? 'Cedula valida'
+                    : 'RUC valido'
+                : 'Cedula = 10 digitos · RUC = 13 digitos'}
+            </Text>
             <Field
               label="Nombre completo"
               value={form.name}
@@ -218,6 +248,11 @@ export function MembersScreen() {
               onChangeText={(t) => setForm({ ...form, email: t })}
               keyboardType="email-address"
               autoCapitalize="none"
+            />
+            <Field
+              label="Direccion (para facturacion)"
+              value={form.address}
+              onChangeText={(t) => setForm({ ...form, address: t })}
             />
             <ErrorText>{err}</ErrorText>
             <Button title="Guardar cliente" onPress={create} loading={busy} />

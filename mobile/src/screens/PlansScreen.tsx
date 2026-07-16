@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { Screen, Title, Card, Badge, Button, Field, Chip, ErrorText } from '../ui';
+import { Screen, Title, Card, Badge, Button, Field, Chip, ErrorText, FieldHint } from '../ui';
 import { validateRequired, validatePrice, firstError } from '../validation';
 import { C } from '../theme';
 
@@ -123,6 +123,7 @@ export function PlansScreen() {
             onChangeText={(t) => setForm({ ...form, price: t })}
             keyboardType="numeric"
           />
+          <FieldHint value={form.price} validate={(v) => validatePrice(v)} ok="Precio valido." />
           <Field
             label="Duracion"
             value={form.amount}

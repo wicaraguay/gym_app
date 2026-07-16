@@ -49,7 +49,7 @@ export function MemberDetailScreen() {
   const [busy, setBusy] = useState(false);
   const [freezeVal, setFreezeVal] = useState<Record<string, string>>({});
   const [editOpen, setEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '' });
+  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', address: '' });
   const [planId, setPlanId] = useState('');
   const [qty, setQty] = useState(1);
   const [startMode, setStartMode] = useState<'hoy' | 'vencio' | 'custom'>('hoy');
@@ -144,6 +144,7 @@ export function MemberDetailScreen() {
       name: `${member.firstName} ${member.lastName}`.trim(),
       phone: member.phone || '',
       email: member.email || '',
+      address: member.address || '',
     });
     setEditOpen(true);
   };
@@ -166,6 +167,7 @@ export function MemberDetailScreen() {
         lastName: name!.lastName,
         phone: (editForm.phone || '').trim() || undefined,
         email: (editForm.email || '').trim() || undefined,
+        address: (editForm.address || '').trim() || undefined,
       });
       setEditOpen(false);
       load();
@@ -537,6 +539,7 @@ export function MemberDetailScreen() {
             <Field label="Nombre completo" value={editForm.name} onChangeText={(t) => setEditForm({ ...editForm, name: t })} />
             <Field label="Telefono" value={editForm.phone} onChangeText={(t) => setEditForm({ ...editForm, phone: t })} keyboardType="phone-pad" />
             <Field label="Email" value={editForm.email} onChangeText={(t) => setEditForm({ ...editForm, email: t })} keyboardType="email-address" autoCapitalize="none" />
+            <Field label="Direccion (para facturacion)" value={editForm.address} onChangeText={(t) => setEditForm({ ...editForm, address: t })} />
             <ErrorText>{error}</ErrorText>
             <Button title="Guardar" onPress={saveMember} loading={busy} />
             <Button title="Cancelar" variant="ghost" onPress={() => setEditOpen(false)} style={{ marginTop: 8 }} />

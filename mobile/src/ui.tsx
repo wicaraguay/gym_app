@@ -1,4 +1,5 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { C } from './theme';
+import { ValidationError } from './validation';
 
 export function Screen({
   children,
@@ -178,6 +180,48 @@ export function Field({
   );
 }
 
+// Campo de contrasena con "ojito" para ver/ocultar lo que se escribe.
+export function PasswordField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+}: {
+  label?: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <View style={{ marginBottom: 12 }}>
+      {label ? <Text style={s.label}>{label}</Text> : null}
+      <View style={{ justifyContent: 'center' }}>
+        <TextInput
+          style={[s.input, { paddingRight: 46 }]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={C.textFaint}
+          secureTextEntry={!show}
+          autoCapitalize="none"
+        />
+        <TouchableOpacity
+          onPress={() => setShow((v) => !v)}
+          style={{ position: 'absolute', right: 12, padding: 4 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons
+            name={show ? 'eye-off-outline' : 'eye-outline'}
+            size={20}
+            color={C.textMuted}
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 export function Loading() {
   return (
     <View style={{ flex: 1, backgroundColor: C.body, justifyContent: 'center' }}>
@@ -194,6 +238,41 @@ export function ErrorText({ children }: { children: ReactNode }) {
 export function OkText({ children }: { children: ReactNode }) {
   if (!children) return null;
   return <Text style={{ color: C.success, marginVertical: 6 }}>{children}</Text>;
+}
+
+// Feedback en vivo debajo de un campo: gris (vacio) / rojo (mal) / verde (bien).
+export function FieldHint({
+  value,
+  validate,
+  ok,
+  hint,
+}: {
+  value: string;
+  validate: (v: string) => ValidationError;
+  ok?: string;
+  hint?: string;
+}) {
+  const v = value.trim();
+  let color = C.textFaint;
+  let text = hint ?? '';
+  if (v) {
+    const err = validate(value);
+    if (err) {
+      color = C.danger;
+      text = err;
+    } else if (ok) {
+      color = C.success;
+      text = ok;
+    } else {
+      text = '';
+    }
+  }
+  if (!text) return null;
+  return (
+    <Text style={{ color, fontSize: 12, marginTop: -6, marginBottom: 10 }}>
+      {text}
+    </Text>
+  );
 }
 
 const s = StyleSheet.create({

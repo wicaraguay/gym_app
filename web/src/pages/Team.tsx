@@ -19,8 +19,10 @@ import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
+import { PasswordInput } from '../components/ui/PasswordInput';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { FieldHint } from '../components/ui/FieldHint';
 
 interface TeamUser {
   id: string;
@@ -228,21 +230,33 @@ export function Team() {
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
-          <Input
-            placeholder="Email (para ingresar)"
-            type="email"
-            inputMode="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
-          />
-          <Input
-            placeholder="Contrasena (min. 6)"
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            required
-          />
+          <div>
+            <Input
+              placeholder="Email (para ingresar)"
+              type="email"
+              inputMode="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+            <FieldHint
+              value={form.email}
+              validate={(v) => validateEmail(v)}
+              ok="Email valido."
+            />
+          </div>
+          <div>
+            <PasswordInput
+              placeholder="Contrasena (min. 6)"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
+            <FieldHint
+              value={form.password}
+              validate={(v) => validatePassword(v)}
+              ok="Contrasena valida."
+              hint="Minimo 6 caracteres."
+            />
+          </div>
           <select
             value={form.role}
             onChange={(e) =>
@@ -344,12 +358,19 @@ export function Team() {
                       value={editForm.name}
                       onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                     />
-                    <Input
-                      placeholder="Email"
-                      type="email"
-                      value={editForm.email}
-                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    />
+                    <div>
+                      <Input
+                        placeholder="Email"
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      />
+                      <FieldHint
+                        value={editForm.email}
+                        validate={(v) => validateEmail(v)}
+                        ok="Email valido."
+                      />
+                    </div>
                     <Input
                       placeholder="Cedula"
                       value={editForm.cedula}
@@ -383,14 +404,20 @@ export function Team() {
 
                 {/* Panel de reset de clave (admin, sin pedir la actual) */}
                 {resetId === u.id && (
-                  <div className="mt-3 sm:pl-[52px] flex flex-col sm:flex-row gap-2">
-                    <Input
-                      type="password"
-                      placeholder={`Nueva clave para ${u.name} (min. 6)`}
-                      value={newPass}
-                      onChange={(e) => setNewPass(e.target.value)}
-                      className="sm:max-w-xs"
-                    />
+                  <div className="mt-3 sm:pl-[52px] flex flex-col sm:flex-row sm:items-start gap-2">
+                    <div className="w-full sm:max-w-xs">
+                      <PasswordInput
+                        placeholder={`Nueva clave para ${u.name} (min. 6)`}
+                        value={newPass}
+                        onChange={(e) => setNewPass(e.target.value)}
+                      />
+                      <FieldHint
+                        value={newPass}
+                        validate={(v) => validatePassword(v)}
+                        ok="Clave valida."
+                        hint="Minimo 6 caracteres."
+                      />
+                    </div>
                     <Button size="sm" onClick={() => saveReset(u)} disabled={busy}>
                       {busy ? 'Guardando...' : 'Guardar clave'}
                     </Button>

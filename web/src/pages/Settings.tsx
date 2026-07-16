@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { emitRefresh } from '../lib/events';
 import { compressImage } from '../lib/compressImage';
 import { validateCedulaOrRuc } from '../lib/validation';
+import { FieldHint } from '../components/ui/FieldHint';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -278,6 +279,12 @@ export function Settings() {
                 disabled={!isAdmin}
                 inputMode="numeric"
                 placeholder="1712345678001"
+              />
+              <FieldHint
+                value={form.ruc}
+                validate={(v) => validateCedulaOrRuc(v)}
+                ok="Numero valido."
+                hint="Cedula (10) o RUC (13). Opcional."
               />
             </FieldRow>
             <FieldRow label="Direccion">

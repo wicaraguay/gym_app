@@ -48,6 +48,14 @@ export function validateRuc(value: string): ValidationError {
   return null;
 }
 
+// Detecta el tipo de documento por la cantidad de digitos (para feedback en vivo).
+export function detectIdType(value: string): 'CEDULA' | 'RUC' | null {
+  const v = value.trim();
+  if (/^\d{10}$/.test(v)) return 'CEDULA';
+  if (/^\d{13}$/.test(v)) return 'RUC';
+  return null;
+}
+
 // Alta rapida sin selector de tipo: acepta cedula (10) o RUC (13).
 export function validateCedulaOrRuc(value: string): ValidationError {
   const v = value.trim();

@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { PasswordInput } from '../components/ui/PasswordInput';
 
 interface Branding {
   businessName: string;
@@ -97,8 +98,7 @@ export function Login() {
             <label className="text-xs text-slate-400 mb-1.5 block">
               Contrasena
             </label>
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

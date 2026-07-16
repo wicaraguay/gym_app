@@ -8,6 +8,7 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { FieldHint } from '../components/ui/FieldHint';
 
 interface Plan {
   id: string;
@@ -131,15 +132,21 @@ export function Plans() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
             />
-            <Input
-              placeholder="Precio"
-              type="number"
-              step="0.01"
-              inputMode="decimal"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              required
-            />
+            <div>
+              <Input
+                placeholder="Precio"
+                type="number"
+                step="0.01"
+                inputMode="decimal"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+              />
+              <FieldHint
+                value={form.price}
+                validate={(v) => validatePrice(v)}
+                ok="Precio valido."
+              />
+            </div>
             <div className="flex gap-2">
               <Input
                 type="number"
