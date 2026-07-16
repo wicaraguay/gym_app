@@ -10,6 +10,20 @@ import { CreateMembershipDto } from './dto/create-membership.dto';
 import { FreezeMembershipDto } from './dto/freeze-membership.dto';
 import { UpdateMembershipDto } from './dto/update-membership.dto';
 
+// El selector de fecha manda "YYYY-MM-DD". `new Date("2025-07-01")` lo toma
+// como MEDIANOCHE UTC, y en Ecuador (UTC-5) eso cae el dia anterior a las 19h,
+// asi que en pantalla se veia "30 de junio". Anclamos al MEDIODIA UTC: con ese
+// margen de +/-11h, la fecha representa el mismo dia calendario en cualquier
+// huso de America. Si viene con hora (ISO completo, ej. continuar al vencer),
+// se respeta tal cual.
+function parseCalendarDate(value: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  }
+  return new Date(value);
+}
+
 @Injectable()
 export class MembershipsService {
   constructor(private prisma: PrismaService) {}
@@ -50,7 +64,7 @@ export class MembershipsService {
     }
 
     const start = dto.startDate
-      ? new Date(dto.startDate)
+      ? parseCalendarDate(dto.startDate)
       : active && dto.startAfterCurrent
         ? new Date(active.endDate)
         : now;

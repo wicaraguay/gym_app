@@ -597,12 +597,14 @@ export function MemberDetailScreen() {
           ))}
         </View>
 
-        {!activeMembership && lastExpired && (
+        {!activeMembership && (
           <View style={{ marginBottom: 14 }}>
             <Text style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Empieza a contar</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Chip label="Hoy" active={startMode === 'hoy'} onPress={() => setStartMode('hoy')} />
-              <Chip label="Al vencer" active={startMode === 'vencio'} onPress={() => setStartMode('vencio')} />
+              {lastExpired && (
+                <Chip label="Al vencer" active={startMode === 'vencio'} onPress={() => setStartMode('vencio')} />
+              )}
               <Chip label="Otra fecha" active={startMode === 'custom'} onPress={() => setStartMode('custom')} />
             </View>
             {startMode === 'custom' && (
@@ -627,7 +629,7 @@ export function MemberDetailScreen() {
                   <DateTimePicker
                     value={customDate ? new Date(customDate) : new Date()}
                     mode="date"
-                    minimumDate={new Date(lastExpired.endDate)}
+                    minimumDate={lastExpired ? new Date(lastExpired.endDate) : undefined}
                     maximumDate={new Date()}
                     onChange={(e, date) => {
                       setShowPicker(false);

@@ -407,6 +407,21 @@ export function MemberDetail() {
         )[0]
     : undefined;
 
+  // Opciones de "empieza a contar" al inscribir sin membresia vigente.
+  // "Al vencer" solo tiene sentido si hay una vencida detras (renovacion).
+  // "Otra fecha" sirve para cargar clientes que ya venian del cuaderno con su
+  // fecha real de inicio (arranque en frio del sistema).
+  const startModes: [('hoy' | 'vencio' | 'custom'), string][] = lastExpired
+    ? [
+        ['hoy', 'Hoy'],
+        ['vencio', 'Al vencer'],
+        ['custom', 'Otra fecha'],
+      ]
+    : [
+        ['hoy', 'Hoy'],
+        ['custom', 'Otra fecha'],
+      ];
+
   return (
     <div className="space-y-4 sm:space-y-5">
       <Link
@@ -1089,19 +1104,17 @@ export function MemberDetail() {
               {/* Renovacion de un vencido: el dueno elige desde cuando cuenta:
                   hoy (perdona), cuando vencio (cuenta todo), o una fecha exacta
                   (ej. el dia que el cliente volvio a entrenar tras descansar). */}
-              {!activeMembership && lastExpired && (
+              {!activeMembership && (
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">
                     Empieza a contar
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(
-                      [
-                        ['hoy', 'Hoy'],
-                        ['vencio', 'Al vencer'],
-                        ['custom', 'Otra fecha'],
-                      ] as const
-                    ).map(([mode, label]) => (
+                  <div
+                    className={`grid gap-2 ${
+                      startModes.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
+                    }`}
+                  >
+                    {startModes.map(([mode, label]) => (
                       <button
                         key={mode}
                         type="button"
@@ -1121,20 +1134,31 @@ export function MemberDetail() {
                       type="date"
                       value={customDate}
                       onChange={(e) => setCustomDate(e.target.value)}
-                      min={new Date(lastExpired.endDate).toISOString().slice(0, 10)}
+                      min={
+                        lastExpired
+                          ? new Date(lastExpired.endDate)
+                              .toISOString()
+                              .slice(0, 10)
+                          : undefined
+                      }
                       max={new Date().toISOString().slice(0, 10)}
                       className="mt-2 w-full px-3 py-2 rounded-xl bg-surface-2 border border-line text-slate-100 text-sm focus:border-neon-cyan focus:outline-none"
                     />
                   )}
                   <p className="text-[11px] text-slate-500 mt-1">
                     {startMode === 'hoy' &&
-                      'Arranca hoy (perdona los dias sin entrenar).'}
+                      (lastExpired
+                        ? 'Arranca hoy (perdona los dias sin entrenar).'
+                        : 'Arranca hoy.')}
                     {startMode === 'vencio' &&
+                      lastExpired &&
                       `Arranca el ${new Date(
                         lastExpired.endDate,
                       ).toLocaleDateString('es-EC')} (cuenta todo desde que vencio).`}
                     {startMode === 'custom' &&
-                      'Arranca en la fecha que elijas (ej. el dia que volvio a entrenar).'}
+                      (lastExpired
+                        ? 'Arranca en la fecha que elijas (ej. el dia que volvio a entrenar).'
+                        : 'Arranca en la fecha real de inicio (ej. lo que dice tu cuaderno).')}
                   </p>
                 </div>
               )}
