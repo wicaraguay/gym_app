@@ -116,3 +116,19 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useConfirm = () => useContext(ConfirmContext);
+
+// Aviso de "no puedes hacer esto": ventanita centrada con un solo boton.
+// Reusa el modal de confirmacion, sin opcion de cancelar. Ideal para bloqueos
+// que el usuario TIENE que ver (ej. abono de mas, accion no permitida).
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAlert = () => {
+  const confirm = useContext(ConfirmContext);
+  return (message: string, title = 'Aviso') =>
+    confirm({
+      title,
+      message,
+      confirmText: 'Entendido',
+      hideCancel: true,
+      tone: 'danger',
+    });
+};

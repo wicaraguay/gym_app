@@ -212,7 +212,10 @@ export function MembersScreen() {
             <Field
               label="Cedula / RUC"
               value={form.identification}
-              onChangeText={(t) => setForm({ ...form, identification: t })}
+              onChangeText={(t) =>
+                // Solo digitos y tope de 13 (largo del RUC).
+                setForm({ ...form, identification: t.replace(/\D/g, '').slice(0, 13) })
+              }
               keyboardType="numeric"
             />
             <Text

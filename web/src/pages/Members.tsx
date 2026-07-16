@@ -10,6 +10,8 @@ import {
   detectIdType,
   firstError,
 } from '../lib/validation';
+import { useAlert } from '../context/ConfirmContext';
+import { useToast } from '../context/ToastContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -76,6 +78,8 @@ function fmtVence(iso?: string | null, expired?: boolean): string | null {
 
 export function Members() {
   const navigate = useNavigate();
+  const notify = useAlert();
+  const toast = useToast();
   const LIMIT = 8;
   const [members, setMembers] = useState<Member[]>([]);
   const [total, setTotal] = useState(0);
@@ -84,7 +88,6 @@ export function Members() {
   const [status, setStatus] = useState('TODOS');
   const [form, setForm] = useState(EMPTY);
   const [showForm, setShowForm] = useState(false);
-  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = () =>
@@ -112,11 +115,7 @@ export function Members() {
       validatePhone(form.phone),
       validateEmail(form.email, true),
     );
-    if (err) {
-      setError(err);
-      return;
-    }
-    setError('');
+    if (err) { notify(err); return; }
     setSaving(true);
     try {
       await api.post('/members', {
@@ -129,9 +128,10 @@ export function Members() {
       });
       setForm(EMPTY);
       setShowForm(false);
+      toast.success('Cliente creado.');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al crear el cliente');
+      notify(err.response?.data?.message || 'Error al crear el cliente');
     } finally {
       setSaving(false);
     }
@@ -184,9 +184,14 @@ export function Members() {
               <Input
                 placeholder="Numero de cedula (10) o RUC (13)"
                 inputMode="numeric"
+                maxLength={13}
                 value={form.identification}
                 onChange={(e) =>
-                  setForm({ ...form, identification: e.target.value })
+                  setForm({
+                    ...form,
+                    // Solo digitos y tope de 13 (largo del RUC).
+                    identification: e.target.value.replace(/\D/g, '').slice(0, 13),
+                  })
                 }
               />
               {form.identification.trim() ? (
@@ -230,9 +235,6 @@ export function Members() {
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               className="sm:col-span-2"
             />
-            {error && (
-              <p className="text-danger text-sm sm:col-span-2">{error}</p>
-            )}
             <Button type="submit" className="w-full sm:col-span-2" disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar cliente'}
             </Button>

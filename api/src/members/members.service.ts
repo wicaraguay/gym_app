@@ -12,7 +12,29 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 export class MembersService {
   constructor(private prisma: PrismaService) {}
 
-  create(dto: CreateMemberDto) {
+  // Verifica que la identificacion (cedula/RUC) no este ya usada por OTRO
+  // cliente. Si lo esta, avisa a nombre de quien, para que el dueno no cargue
+  // dos veces el mismo cliente al pasar su cuaderno.
+  private async ensureIdentificationFree(
+    identification: string,
+    exceptId?: string,
+  ) {
+    const existing = await this.prisma.member.findFirst({
+      where: {
+        identification,
+        ...(exceptId ? { id: { not: exceptId } } : {}),
+      },
+      select: { firstName: true, lastName: true },
+    });
+    if (existing) {
+      throw new BadRequestException(
+        `La identificacion ${identification} ya esta registrada a nombre de ${existing.firstName} ${existing.lastName}.`,
+      );
+    }
+  }
+
+  async create(dto: CreateMemberDto) {
+    await this.ensureIdentificationFree(dto.identification);
     return this.prisma.member.create({ data: dto });
   }
 
@@ -119,6 +141,9 @@ export class MembersService {
 
   async update(id: string, dto: UpdateMemberDto) {
     await this.findOne(id);
+    if (dto.identification) {
+      await this.ensureIdentificationFree(dto.identification, id);
+    }
     try {
       return await this.prisma.member.update({ where: { id }, data: dto });
     } catch (e: any) {

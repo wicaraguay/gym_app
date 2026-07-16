@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { useConfirm } from '../context/ConfirmContext';
+import { useConfirm, useAlert } from '../context/ConfirmContext';
+import { useToast } from '../context/ToastContext';
 import { Card } from '../components/ui/Card';
 import { StatCard } from '../components/ui/StatCard';
 import { Button } from '../components/ui/Button';
@@ -43,10 +44,11 @@ export function Dashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const confirm = useConfirm();
+  const notify = useAlert(); // ventanita para bloqueos
+  const toast = useToast(); // toast para exitos
   const [data, setData] = useState<Summary | null>(null);
   const [mafDays, setMafDays] = useState('');
   const [mafReason, setMafReason] = useState('');
-  const [mafMsg, setMafMsg] = useState('');
   const [mafLoading, setMafLoading] = useState(false);
   const [batches, setBatches] = useState<Batch[]>([]);
 
@@ -62,20 +64,20 @@ export function Dashboard() {
 
   const doFreezeAll = async () => {
     const days = Number(mafDays);
-    if (!days || days <= 0) return;
+    if (!days || days <= 0) {
+      notify('Ingresá cuántos días vas a congelar (mayor a 0).');
+      return;
+    }
 
     // Sin membresias vigentes no hay nada que congelar: avisamos y salimos,
     // en vez de pedir confirmar y despues reportar "0 congeladas".
     const activasCount =
       (data?.paidMemberships ?? 0) + (data?.pendingMemberships ?? 0);
     if (activasCount === 0) {
-      await confirm({
-        title: 'No hay clientes para congelar',
-        message:
-          'En este momento no tienes clientes con una membresia activa. El congelamiento masivo corre el vencimiento de las membresias vigentes, y ahora no hay ninguna.',
-        confirmText: 'Entendido',
-        hideCancel: true,
-      });
+      notify(
+        'En este momento no tienes clientes con una membresia activa. El congelamiento masivo corre el vencimiento de las membresias vigentes, y ahora no hay ninguna.',
+        'No hay clientes para congelar',
+      );
       return;
     }
 
@@ -86,7 +88,6 @@ export function Dashboard() {
     });
     if (!ok) return;
     setMafLoading(true);
-    setMafMsg('');
     try {
       const res = await api.post('/memberships/freeze-all', {
         days,
@@ -94,22 +95,19 @@ export function Dashboard() {
       });
       // Red de seguridad: el backend no encontro vigentes (p. ej. todas futuras).
       if (res.data.affected === 0) {
-        await confirm({
-          title: 'No hay clientes para congelar',
-          message:
-            'No se encontraron membresias vigentes para congelar en este momento.',
-          confirmText: 'Entendido',
-          hideCancel: true,
-        });
+        notify(
+          'No se encontraron membresias vigentes para congelar en este momento.',
+          'No hay clientes para congelar',
+        );
         return;
       }
-      setMafMsg(`Listo: ${res.data.affected} membresia(s) congelada(s) ${days} dias.`);
+      toast.success(`Listo: ${res.data.affected} membresia(s) congelada(s) ${days} dias.`);
       setMafDays('');
       setMafReason('');
       load();
       loadBatches();
     } catch (err: any) {
-      setMafMsg(err.response?.data?.message || 'Error al congelar');
+      notify(err.response?.data?.message || 'Error al congelar');
     } finally {
       setMafLoading(false);
     }
@@ -123,13 +121,12 @@ export function Dashboard() {
       tone: 'danger',
     });
     if (!ok) return;
-    setMafMsg('');
     try {
       const r = await api.delete(`/memberships/freeze-batch/${b.batchId}`);
-      setMafMsg(`Masivo revertido a ${r.data.reverted} cliente(s).`);
+      toast.success(`Masivo revertido a ${r.data.reverted} cliente(s).`);
       loadBatches();
     } catch (err: any) {
-      setMafMsg(err.response?.data?.message || 'No se pudo revertir');
+      notify(err.response?.data?.message || 'No se pudo revertir');
     }
   };
 
@@ -250,7 +247,6 @@ export function Dashboard() {
               {mafLoading ? 'Congelando...' : 'Congelar a todos'}
             </Button>
           </div>
-          {mafMsg && <p className="text-sm text-success mt-2">{mafMsg}</p>}
 
           {/* Historial de masivos activos: revertir a todos desde aca */}
           {batches.length > 0 && (

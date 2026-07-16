@@ -46,7 +46,12 @@ export function DashboardScreen() {
 
   const freezeAll = () => {
     const days = Number(mafDays);
-    if (!days || days <= 0) return;
+    if (!days || days <= 0) {
+      Alert.alert('Falta un dato', 'Ingresá cuántos días vas a congelar (mayor a 0).', [
+        { text: 'Entendido' },
+      ]);
+      return;
+    }
 
     // Sin membresias vigentes no hay nada que congelar: avisamos y salimos.
     const activasCount =

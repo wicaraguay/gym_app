@@ -3,7 +3,8 @@ import { CreditCard, Pencil, Plus, Power, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { validateRequired, validatePrice, firstError } from '../lib/validation';
 import { useAuth } from '../context/AuthContext';
-import { useConfirm } from '../context/ConfirmContext';
+import { useConfirm, useAlert } from '../context/ConfirmContext';
+import { useToast } from '../context/ToastContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -31,13 +32,13 @@ export function Plans() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const confirm = useConfirm();
+  const notify = useAlert();
+  const toast = useToast();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [form, setForm] = useState({ name: '', price: '', amount: '1', unit: 'mes' });
   const [editing, setEditing] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState('');
-  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [editError, setEditError] = useState('');
   const [page, setPage] = useState(1);
   const LIMIT = 8;
 
@@ -55,10 +56,9 @@ export function Plans() {
       !Number.isFinite(amount) || amount < 1 ? 'La duracion debe ser al menos 1.' : null,
     );
     if (err) {
-      setError(err);
+      notify(err);
       return;
     }
-    setError('');
     setSaving(true);
     try {
       const payload: any = { name: form.name.trim(), price: Number(form.price) };
@@ -66,9 +66,10 @@ export function Plans() {
       else payload.durationDays = amount;
       await api.post('/plans', payload);
       setForm({ name: '', price: '', amount: '1', unit: 'mes' });
+      toast.success('Plan creado.');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error');
+      notify(err.response?.data?.message || 'No se pudo crear el plan.');
     } finally {
       setSaving(false);
     }
@@ -77,17 +78,18 @@ export function Plans() {
   const savePrice = async (id: string) => {
     const err = validatePrice(editPrice);
     if (err) {
-      setEditError(err);
+      notify(err);
       return;
     }
-    setEditError('');
     await api.patch(`/plans/${id}`, { price: Number(editPrice) });
     setEditing(null);
+    toast.success('Precio actualizado.');
     load();
   };
 
   const toggleActive = async (p: Plan) => {
     await api.patch(`/plans/${p.id}`, { active: !p.active });
+    toast.success(p.active ? 'Plan desactivado.' : 'Plan activado.');
     load();
   };
 
@@ -99,12 +101,12 @@ export function Plans() {
       tone: 'danger',
     });
     if (!ok) return;
-    setError('');
     try {
       await api.delete(`/plans/${p.id}`);
+      toast.success('Plan eliminado.');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se puede eliminar');
+      notify(err.response?.data?.message || 'No se puede eliminar el plan.');
     }
   };
 
@@ -170,7 +172,6 @@ export function Plans() {
               <Plus size={16} /> {saving ? 'Creando...' : 'Crear'}
             </Button>
           </form>
-          {error && <p className="text-danger text-sm mt-2">{error}</p>}
         </Card>
       )}
 
@@ -207,7 +208,6 @@ export function Plans() {
                     Guardar
                   </Button>
                 </div>
-                {editError && <p className="text-danger text-xs mt-1">{editError}</p>}
               </div>
             ) : (
               <div className="flex items-end justify-between">
@@ -225,7 +225,6 @@ export function Plans() {
                     onClick={() => {
                       setEditing(p.id);
                       setEditPrice(String(p.price));
-                      setEditError('');
                     }}
                     className="inline-flex items-center gap-1 text-xs text-neon-cyan hover:underline"
                   >

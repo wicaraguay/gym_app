@@ -1,5 +1,5 @@
 import { ChangeEvent, ReactNode, useEffect, useState } from 'react';
-import { Building2, User, ImagePlus, Save, CheckCircle2, Trash2 } from 'lucide-react';
+import { Building2, User, ImagePlus, Save, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { emitRefresh } from '../lib/events';
 import { compressImage } from '../lib/compressImage';
@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { useAlert } from '../context/ConfirmContext';
+import { useToast } from '../context/ToastContext';
 
 // Peso aproximado de un data URL base64, en KB.
 function dataUrlKb(dataUrl: string): number {
@@ -131,10 +133,10 @@ interface Form {
 
 export function Settings() {
   const { user } = useAuth();
+  const notify = useAlert();
+  const toast = useToast();
   const isAdmin = user?.role === 'ADMIN';
   const [form, setForm] = useState<Form | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -175,16 +177,14 @@ export function Settings() {
 
   const onSave = async () => {
     if (!form) return;
-    setSaved(false);
     // El RUC/cedula del negocio es opcional, pero si se carga debe ser valido.
     if (form.ruc.trim()) {
       const v = validateCedulaOrRuc(form.ruc);
       if (v) {
-        setError(v);
+        notify(v);
         return;
       }
     }
-    setError('');
     setSaving(true);
     try {
       await api.patch('/settings', {
@@ -194,10 +194,10 @@ export function Settings() {
         ruc: form.ruc.trim(),
         address: form.address.trim(),
       });
-      setSaved(true);
       emitRefresh(); // el menu lateral toma el logo/nombre nuevo al instante
+      toast.success('Configuracion guardada');
     } catch (e: any) {
-      setError(e.response?.data?.message || 'No se pudieron guardar los cambios.');
+      notify(e.response?.data?.message || 'No se pudieron guardar los cambios.');
     } finally {
       setSaving(false);
     }
@@ -300,21 +300,11 @@ export function Settings() {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
-        <div className="text-sm">
-          {error ? (
-            <span className="text-danger font-medium">{error}</span>
-          ) : saved ? (
-            <span className="inline-flex items-center gap-1.5 text-success font-medium">
-              <CheckCircle2 size={16} /> Cambios guardados
-            </span>
-          ) : (
-            <span className="text-slate-400">
-              {isAdmin
-                ? 'Revisa los datos y guarda los cambios cuando estes listo.'
-                : 'Solo el administrador puede editar la configuracion.'}
-            </span>
-          )}
-        </div>
+        <p className="text-sm text-slate-400">
+          {isAdmin
+            ? 'Revisa los datos y guarda los cambios cuando estes listo.'
+            : 'Solo el administrador puede editar la configuracion.'}
+        </p>
         {isAdmin && (
           <Button onClick={onSave} className="w-full sm:w-auto px-6" disabled={saving}>
             <Save size={16} /> {saving ? 'Guardando...' : 'Guardar cambios'}

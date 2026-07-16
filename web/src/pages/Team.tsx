@@ -16,7 +16,8 @@ import {
   firstError,
 } from '../lib/validation';
 import { useAuth } from '../context/AuthContext';
-import { useConfirm } from '../context/ConfirmContext';
+import { useConfirm, useAlert } from '../context/ConfirmContext';
+import { useToast } from '../context/ToastContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { PasswordInput } from '../components/ui/PasswordInput';
@@ -47,10 +48,10 @@ const roleLabel = (r: string) =>
 export function Team() {
   const { user } = useAuth();
   const confirm = useConfirm();
+  const notify = useAlert();
+  const toast = useToast();
   const [users, setUsers] = useState<TeamUser[]>([]);
   const [form, setForm] = useState(EMPTY);
-  const [error, setError] = useState('');
-  const [ok, setOk] = useState('');
   const [busy, setBusy] = useState(false);
   const [resetId, setResetId] = useState<string | null>(null);
   const [newPass, setNewPass] = useState('');
@@ -70,17 +71,15 @@ export function Team() {
 
   const onCreate = async (e: FormEvent) => {
     e.preventDefault();
-    setOk('');
     const v = firstError(
       validateRequired(form.name, 'El nombre'),
       validateEmail(form.email),
       validatePassword(form.password),
     );
     if (v) {
-      setError(v);
+      notify(v);
       return;
     }
-    setError('');
     setBusy(true);
     try {
       await api.post('/users', {
@@ -89,18 +88,16 @@ export function Team() {
         email: form.email.trim(),
       });
       setForm(EMPTY);
-      setOk(`${roleLabel(form.role)} agregado correctamente.`);
+      toast.success(`${roleLabel(form.role)} agregado correctamente.`);
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo crear el usuario');
+      notify(err.response?.data?.message || 'No se pudo crear el usuario');
     } finally {
       setBusy(false);
     }
   };
 
   const toggleActive = async (u: TeamUser) => {
-    setError('');
-    setOk('');
     if (u.active) {
       const yes = await confirm({
         title: 'Desactivar acceso',
@@ -112,30 +109,29 @@ export function Team() {
     }
     try {
       await api.patch(`/users/${u.id}`, { active: !u.active });
+      toast.success(u.active ? `${u.name} desactivado.` : `${u.name} activado.`);
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo actualizar');
+      notify(err.response?.data?.message || 'No se pudo actualizar');
     }
   };
 
   // Reset de contrasena por el ADMIN (para cuando el usuario la olvido).
   // No pide la actual: es una accion administrativa sobre otra cuenta.
   const saveReset = async (u: TeamUser) => {
-    setOk('');
     const v = validatePassword(newPass);
     if (v) {
-      setError(v);
+      notify(v);
       return;
     }
-    setError('');
     setBusy(true);
     try {
       await api.patch(`/users/${u.id}`, { password: newPass });
       setResetId(null);
       setNewPass('');
-      setOk(`Contrasena de ${u.name} actualizada. Pasale la nueva clave.`);
+      toast.success(`Contrasena de ${u.name} actualizada. Pasale la nueva clave.`);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo cambiar la clave');
+      notify(err.response?.data?.message || 'No se pudo cambiar la clave');
     } finally {
       setBusy(false);
     }
@@ -143,8 +139,6 @@ export function Team() {
 
   // Editar los datos de un usuario (accion del ADMIN sobre otra cuenta).
   const openEdit = (u: TeamUser) => {
-    setError('');
-    setOk('');
     setResetId(null);
     setEditForm({
       name: u.name || '',
@@ -157,16 +151,14 @@ export function Team() {
   };
 
   const saveEdit = async (u: TeamUser) => {
-    setOk('');
     const v = firstError(
       validateRequired(editForm.name, 'El nombre'),
       validateEmail(editForm.email),
     );
     if (v) {
-      setError(v);
+      notify(v);
       return;
     }
-    setError('');
     setBusy(true);
     try {
       await api.patch(`/users/${u.id}`, {
@@ -175,10 +167,10 @@ export function Team() {
         email: editForm.email.trim(),
       });
       setEditId(null);
-      setOk(`Datos de ${editForm.name} actualizados.`);
+      toast.success(`Datos de ${editForm.name} actualizados.`);
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo guardar');
+      notify(err.response?.data?.message || 'No se pudo guardar');
     } finally {
       setBusy(false);
     }
@@ -187,8 +179,6 @@ export function Team() {
   // Eliminar definitivamente. El backend lo bloquea si la persona ya
   // registro pagos (romperia el historial) o si es el unico admin.
   const remove = async (u: TeamUser) => {
-    setError('');
-    setOk('');
     const yes = await confirm({
       title: 'Eliminar usuario',
       message: `Eliminar a ${u.name} definitivamente? Esta accion no se puede deshacer. Si solo queres quitarle el acceso, mejor desactivalo.`,
@@ -198,10 +188,10 @@ export function Team() {
     if (!yes) return;
     try {
       await api.delete(`/users/${u.id}`);
-      setOk(`${u.name} fue eliminado.`);
+      toast.success(`${u.name} fue eliminado.`);
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo eliminar');
+      notify(err.response?.data?.message || 'No se pudo eliminar');
     }
   };
 
@@ -273,8 +263,6 @@ export function Team() {
             </Button>
           </div>
         </form>
-        {error && <p className="text-danger text-sm mt-2">{error}</p>}
-        {ok && <p className="text-success text-sm mt-2">{ok}</p>}
         <p className="text-xs text-slate-500 mt-3">
           El <span className="text-slate-300">recepcionista</span> puede
           registrar clientes, cobrar e inscribir en planes, pero NO borra ni
@@ -327,8 +315,6 @@ export function Team() {
                         setResetId(resetId === u.id ? null : u.id);
                         setEditId(null);
                         setNewPass('');
-                        setError('');
-                        setOk('');
                       }}
                     >
                       <KeyRound size={14} /> Clave

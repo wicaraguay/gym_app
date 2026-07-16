@@ -59,7 +59,16 @@ export class DashboardService {
 
   async summary() {
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Inicio de mes en hora de ECUADOR (UTC-5, sin horario de verano), expresado
+    // como instante UTC. Sin esto el corte caeria a medianoche UTC = 19h del dia
+    // anterior en Ecuador, y un pago hecho de noche el ultimo dia del mes se
+    // contaria en el mes siguiente. Medianoche EC del dia 1 = 05:00 UTC del dia 1.
+    // Calculado con offset explicito: correcto sin importar la TZ del contenedor.
+    const EC_OFFSET_HOURS = 5;
+    const ecNow = new Date(now.getTime() - EC_OFFSET_HOURS * 3600000);
+    const monthStart = new Date(
+      Date.UTC(ecNow.getUTCFullYear(), ecNow.getUTCMonth(), 1, EC_OFFSET_HOURS, 0, 0),
+    );
 
     // Marca vencidas antes de contar (mantiene los numeros correctos).
     await this.prisma.membership.updateMany({

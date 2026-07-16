@@ -31,7 +31,8 @@ import {
   firstError,
 } from '../lib/validation';
 import { useAuth } from '../context/AuthContext';
-import { useConfirm } from '../context/ConfirmContext';
+import { useConfirm, useAlert } from '../context/ConfirmContext';
+import { useToast } from '../context/ToastContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -93,6 +94,8 @@ export function MemberDetail() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const confirm = useConfirm();
+  const notify = useAlert(); // ventanita para bloqueos
+  const toast = useToast(); // toast en la esquina para exitos
   const [member, setMember] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
   const [planId, setPlanId] = useState('');
@@ -106,7 +109,6 @@ export function MemberDetail() {
   const [savingMemId, setSavingMemId] = useState<string | null>(null);
   const [freezingBusy, setFreezingBusy] = useState(false);
   const [method, setMethod] = useState<Record<string, string>>({});
-  const [error, setError] = useState('');
   const [freezingId, setFreezingId] = useState<string | null>(null);
   const [freezeVal, setFreezeVal] = useState('');
   const [editing, setEditing] = useState(false);
@@ -145,10 +147,9 @@ export function MemberDetail() {
       validateEmail(editForm.email || '', true),
     );
     if (err) {
-      setError(err);
+      notify(err);
       return;
     }
-    setError('');
     setSavingEdit(true);
     try {
       await api.patch(`/members/${id}`, {
@@ -161,17 +162,23 @@ export function MemberDetail() {
         address: (editForm.address || '').trim() || undefined,
       });
       setEditing(false);
+      toast.success('Datos guardados.');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo guardar');
+      notify(err.response?.data?.message || 'No se pudo guardar');
     } finally {
       setSavingEdit(false);
     }
   };
 
   const toggleActive = async () => {
-    await api.patch(`/members/${id}`, { active: !member.active });
-    load();
+    try {
+      await api.patch(`/members/${id}`, { active: !member.active });
+      toast.success(member.active ? 'Cliente desactivado.' : 'Cliente activado.');
+      load();
+    } catch (err: any) {
+      notify(err.response?.data?.message || 'No se pudo actualizar');
+    }
   };
 
   const deleteMember = async () => {
@@ -183,18 +190,24 @@ export function MemberDetail() {
       tone: 'danger',
     });
     if (!ok) return;
-    setError('');
     try {
       await api.delete(`/members/${id}`);
+      toast.success('Cliente eliminado.');
       navigate('/members');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se puede eliminar');
+      notify(err.response?.data?.message || 'No se puede eliminar');
     }
   };
 
   const createMembership = async (anticipado = false, startDate?: string) => {
-    if (!planId) return;
-    setError('');
+    if (!planId) {
+      notify('Primero elegí una promoción (plan).');
+      return;
+    }
+    if (!qty || Number(qty) < 1) {
+      notify('Elegí la cantidad de meses (al menos 1).');
+      return;
+    }
     try {
       await api.post('/memberships', {
         memberId: id,
@@ -207,15 +220,15 @@ export function MemberDetail() {
       setQty('1');
       setStartMode('hoy');
       setCustomDate('');
+      toast.success(anticipado ? 'Compra anticipada registrada.' : 'Membresia inscrita.');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al inscribir');
+      notify(err.response?.data?.message || 'Error al inscribir');
     }
   };
 
   // Editar una membresia creada por error (cambiar plan/cantidad). ADMIN.
   const openEditMem = (m: any) => {
-    setError('');
     // Deriva la cantidad actual a partir del precio congelado (precio x qty).
     const unit = Number(m.plan?.price) || 0;
     const derivedQty = unit > 0 ? Math.max(1, Math.round(Number(m.priceSnapshot) / unit)) : 1;
@@ -234,7 +247,6 @@ export function MemberDetail() {
       });
       if (!ok) return;
     }
-    setError('');
     setSavingMemId(m.id);
     try {
       await api.patch(`/memberships/${m.id}`, {
@@ -242,9 +254,10 @@ export function MemberDetail() {
         quantity: Number(editMemForm.quantity),
       });
       setEditMemId(null);
+      toast.success('Membresia actualizada.');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo editar la membresia');
+      notify(err.response?.data?.message || 'No se pudo editar la membresia');
     } finally {
       setSavingMemId(null);
     }
@@ -266,13 +279,13 @@ export function MemberDetail() {
       tone: 'danger',
     });
     if (!ok) return;
-    setError('');
     try {
       await api.delete(`/memberships/${m.id}`);
+      toast.success('Membresia eliminada.');
       load();
       emitRefresh();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo eliminar');
+      notify(err.response?.data?.message || 'No se pudo eliminar');
     }
   };
 
@@ -280,10 +293,9 @@ export function MemberDetail() {
     // El abono debe ser positivo y NO puede superar el saldo pendiente.
     const err = validateAmount(abono[membershipId] || '', { max, label: 'El abono' });
     if (err) {
-      setError(err);
+      notify(err); // ventanita: imposible que no lo vea (ej. abono de mas)
       return;
     }
-    setError('');
     setPayingId(membershipId);
     try {
       await api.post('/payments', {
@@ -292,10 +304,11 @@ export function MemberDetail() {
         method: method[membershipId] || 'EFECTIVO',
       });
       setAbono({ ...abono, [membershipId]: '' });
+      toast.success('Abono registrado.');
       load();
       emitRefresh(); // la campanita suelta al cliente al que se le cobro
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al registrar el abono');
+      notify(err.response?.data?.message || 'Error al registrar el abono');
     } finally {
       setPayingId(null);
     }
@@ -304,18 +317,18 @@ export function MemberDetail() {
   const freezeMembership = async (membershipId: string) => {
     const err = validateDays(freezeVal);
     if (err) {
-      setError(err);
+      notify(err);
       return;
     }
-    setError('');
     setFreezingBusy(true);
     try {
       await api.post(`/memberships/${membershipId}/freeze`, { days: Number(freezeVal) });
       setFreezingId(null);
       setFreezeVal('');
+      toast.success('Membresia congelada.');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo congelar');
+      notify(err.response?.data?.message || 'No se pudo congelar');
     } finally {
       setFreezingBusy(false);
     }
@@ -331,12 +344,12 @@ export function MemberDetail() {
       tone: 'danger',
     });
     if (!ok) return;
-    setError('');
     try {
       await api.delete(`/memberships/freezes/${freezeId}`);
+      toast.success('Congelamiento quitado.');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo quitar');
+      notify(err.response?.data?.message || 'No se pudo quitar');
     }
   };
 
@@ -469,10 +482,21 @@ export function MemberDetail() {
                 Identificacion
               </label>
               <Input
-                value={editForm.identification}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, identification: e.target.value })
+                inputMode={
+                  editForm.identificationType === 'PASAPORTE' ? 'text' : 'numeric'
                 }
+                value={editForm.identification}
+                onChange={(e) => {
+                  // Cedula/RUC: solo digitos con su tope (10 / 13). Pasaporte:
+                  // alfanumerico. Consumidor final: digitos.
+                  const t = editForm.identificationType;
+                  let v = e.target.value;
+                  if (t === 'CEDULA') v = v.replace(/\D/g, '').slice(0, 10);
+                  else if (t === 'RUC' || t === 'CONSUMIDOR_FINAL')
+                    v = v.replace(/\D/g, '').slice(0, 13);
+                  else v = v.slice(0, 20); // pasaporte
+                  setEditForm({ ...editForm, identification: v });
+                }}
               />
               {editForm.identification.trim() &&
                 validateIdentification(
@@ -518,7 +542,6 @@ export function MemberDetail() {
               />
             </div>
           </div>
-          {error && <p className="text-danger text-sm mt-2">{error}</p>}
           <div className="flex gap-2 mt-3">
             <Button onClick={saveEdit} disabled={savingEdit}>
               {savingEdit ? 'Guardando...' : 'Guardar'}
@@ -617,11 +640,6 @@ export function MemberDetail() {
         {/* Membresias (columna ancha) */}
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-lg font-semibold text-white">Membresias</h2>
-          {error && (
-            <p className="text-danger text-sm bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
 
           {(() => {
             // Una sola funcion para pintar la tarjeta (activas e historial)
