@@ -72,6 +72,15 @@ export function validateAmount(
   return null;
 }
 
+export function validatePrice(value: string): ValidationError {
+  const v = value.trim();
+  if (!v) return 'El precio es obligatorio.';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 'El precio debe ser un numero valido.';
+  if (n <= 0) return 'El precio debe ser mayor a 0.';
+  return null;
+}
+
 export const MIN_PASSWORD = 6;
 
 export function validatePassword(value: string, min = MIN_PASSWORD): ValidationError {

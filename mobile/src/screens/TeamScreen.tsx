@@ -4,6 +4,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { Screen, Title, Card, Badge, Button, Field, ErrorText, OkText } from '../ui';
+import {
+  validateEmail,
+  validateRequired,
+  validatePassword,
+  firstError,
+} from '../validation';
 import { C } from '../theme';
 
 const roleLabel = (r: string) => (r === 'ADMIN' ? 'Administrador' : 'Recepcionista');
@@ -16,6 +22,7 @@ export function TeamScreen() {
   const [ok, setOk] = useState('');
   const [resetId, setResetId] = useState<string | null>(null);
   const [newPass, setNewPass] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
     api.get('/users').then((r) => setUsers(r.data)).catch(() => {});
@@ -24,15 +31,31 @@ export function TeamScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const create = async () => {
+    const v = firstError(
+      validateRequired(form.name, 'El nombre'),
+      validateEmail(form.email),
+      validatePassword(form.password),
+    );
+    if (v) {
+      setError(v);
+      return;
+    }
     setError('');
     setOk('');
+    setBusy(true);
     try {
-      await api.post('/users', form);
+      await api.post('/users', {
+        ...form,
+        name: form.name.trim(),
+        email: form.email.trim(),
+      });
       setForm({ name: '', email: '', password: '', role: 'RECEPCIONISTA' });
       setOk('Persona agregada.');
       load();
     } catch (e: any) {
       setError(e?.response?.data?.message || 'No se pudo crear');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -81,11 +104,13 @@ export function TeamScreen() {
   };
 
   const saveReset = async (u: any) => {
-    if (newPass.trim().length < 4) {
-      setError('La clave debe tener al menos 4 caracteres.');
+    const v = validatePassword(newPass);
+    if (v) {
+      setError(v);
       return;
     }
     setError('');
+    setBusy(true);
     try {
       await api.patch(`/users/${u.id}`, { password: newPass });
       setResetId(null);
@@ -93,6 +118,8 @@ export function TeamScreen() {
       setOk(`Clave de ${u.name} actualizada.`);
     } catch (e: any) {
       setError(e?.response?.data?.message || 'No se pudo cambiar la clave');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -111,7 +138,7 @@ export function TeamScreen() {
           autoCapitalize="none"
         />
         <Field
-          label="Contraseña (min. 4)"
+          label="Contraseña (min. 6)"
           value={form.password}
           onChangeText={(t) => setForm({ ...form, password: t })}
           secureTextEntry
@@ -133,7 +160,7 @@ export function TeamScreen() {
         </View>
         <ErrorText>{error}</ErrorText>
         <OkText>{ok}</OkText>
-        <Button title="Agregar al equipo" onPress={create} />
+        <Button title="Agregar al equipo" onPress={create} loading={busy} />
       </Card>
 
       {users.map((u) => {
@@ -183,7 +210,7 @@ export function TeamScreen() {
                   placeholder={`Nueva clave para ${u.name}`}
                   secureTextEntry
                 />
-                <Button title="Guardar clave" onPress={() => saveReset(u)} />
+                <Button title="Guardar clave" onPress={() => saveReset(u)} loading={busy} />
               </View>
             )}
           </Card>

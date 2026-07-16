@@ -1,6 +1,12 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { User as UserIcon, KeyRound, Save, Shield } from 'lucide-react';
 import { api } from '../lib/api';
+import {
+  validateEmail,
+  validateRequired,
+  validatePassword,
+  firstError,
+} from '../lib/validation';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -24,6 +30,8 @@ export function Profile() {
   const [okMsg, setOkMsg] = useState('');
   const [pwErr, setPwErr] = useState('');
   const [pwOk, setPwOk] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPw, setSavingPw] = useState(false);
 
   useEffect(() => {
     api.get('/users/me').then((r) =>
@@ -38,25 +46,43 @@ export function Profile() {
 
   const saveProfile = async (e: FormEvent) => {
     e.preventDefault();
-    setErr('');
     setOkMsg('');
+    const v = firstError(validateRequired(form.name, 'El nombre'), validateEmail(form.email));
+    if (v) {
+      setErr(v);
+      return;
+    }
+    setErr('');
+    setSavingProfile(true);
     try {
-      await api.patch('/users/me', form);
+      await api.patch('/users/me', {
+        ...form,
+        name: form.name.trim(),
+        email: form.email.trim(),
+      });
       setOkMsg('Datos guardados.');
       await refreshUser(); // el header toma el nombre nuevo al instante
     } catch (e: any) {
       setErr(e.response?.data?.message || 'No se pudo guardar');
+    } finally {
+      setSavingProfile(false);
     }
   };
 
   const changePassword = async (e: FormEvent) => {
     e.preventDefault();
-    setPwErr('');
     setPwOk('');
-    if (pw.newPassword !== pw.confirm) {
-      setPwErr('Las contrasenas nuevas no coinciden');
+    const v = firstError(
+      validateRequired(pw.currentPassword, 'La contrasena actual'),
+      validatePassword(pw.newPassword),
+      pw.newPassword !== pw.confirm ? 'Las contrasenas nuevas no coinciden.' : null,
+    );
+    if (v) {
+      setPwErr(v);
       return;
     }
+    setPwErr('');
+    setSavingPw(true);
     try {
       await api.patch('/users/me/password', {
         currentPassword: pw.currentPassword,
@@ -66,6 +92,8 @@ export function Profile() {
       setPwOk('Contrasena actualizada correctamente.');
     } catch (e: any) {
       setPwErr(e.response?.data?.message || 'No se pudo cambiar');
+    } finally {
+      setSavingPw(false);
     }
   };
 
@@ -133,8 +161,8 @@ export function Profile() {
             {err && <p className="text-danger text-sm">{err}</p>}
             {okMsg && <p className="text-success text-sm">{okMsg}</p>}
             <div>
-              <Button type="submit" className="w-full sm:w-auto px-6">
-                <Save size={16} /> Guardar datos
+              <Button type="submit" className="w-full sm:w-auto px-6" disabled={savingProfile}>
+                <Save size={16} /> {savingProfile ? 'Guardando...' : 'Guardar datos'}
               </Button>
             </div>
           </form>
@@ -162,7 +190,7 @@ export function Profile() {
             </div>
             <div>
               <label className="text-xs text-slate-400 mb-1 block">
-                Nueva contrasena (min. 4)
+                Nueva contrasena (min. 6)
               </label>
               <Input
                 type="password"
@@ -185,8 +213,8 @@ export function Profile() {
             {pwErr && <p className="text-danger text-sm">{pwErr}</p>}
             {pwOk && <p className="text-success text-sm">{pwOk}</p>}
             <div>
-              <Button type="submit" className="w-full sm:w-auto px-6">
-                <Shield size={16} /> Actualizar contrasena
+              <Button type="submit" className="w-full sm:w-auto px-6" disabled={savingPw}>
+                <Shield size={16} /> {savingPw ? 'Actualizando...' : 'Actualizar contrasena'}
               </Button>
             </div>
           </form>

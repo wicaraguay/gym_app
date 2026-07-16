@@ -9,6 +9,12 @@ import {
   Trash2,
 } from 'lucide-react';
 import { api } from '../lib/api';
+import {
+  validateEmail,
+  validateRequired,
+  validatePassword,
+  firstError,
+} from '../lib/validation';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { Card } from '../components/ui/Card';
@@ -43,6 +49,7 @@ export function Team() {
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
+  const [busy, setBusy] = useState(false);
   const [resetId, setResetId] = useState<string | null>(null);
   const [newPass, setNewPass] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
@@ -61,15 +68,31 @@ export function Team() {
 
   const onCreate = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
     setOk('');
+    const v = firstError(
+      validateRequired(form.name, 'El nombre'),
+      validateEmail(form.email),
+      validatePassword(form.password),
+    );
+    if (v) {
+      setError(v);
+      return;
+    }
+    setError('');
+    setBusy(true);
     try {
-      await api.post('/users', form);
+      await api.post('/users', {
+        ...form,
+        name: form.name.trim(),
+        email: form.email.trim(),
+      });
       setForm(EMPTY);
       setOk(`${roleLabel(form.role)} agregado correctamente.`);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'No se pudo crear el usuario');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -96,12 +119,14 @@ export function Team() {
   // Reset de contrasena por el ADMIN (para cuando el usuario la olvido).
   // No pide la actual: es una accion administrativa sobre otra cuenta.
   const saveReset = async (u: TeamUser) => {
-    setError('');
     setOk('');
-    if (newPass.trim().length < 4) {
-      setError('La nueva contrasena debe tener al menos 4 caracteres.');
+    const v = validatePassword(newPass);
+    if (v) {
+      setError(v);
       return;
     }
+    setError('');
+    setBusy(true);
     try {
       await api.patch(`/users/${u.id}`, { password: newPass });
       setResetId(null);
@@ -109,6 +134,8 @@ export function Team() {
       setOk(`Contrasena de ${u.name} actualizada. Pasale la nueva clave.`);
     } catch (err: any) {
       setError(err.response?.data?.message || 'No se pudo cambiar la clave');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -128,15 +155,30 @@ export function Team() {
   };
 
   const saveEdit = async (u: TeamUser) => {
-    setError('');
     setOk('');
+    const v = firstError(
+      validateRequired(editForm.name, 'El nombre'),
+      validateEmail(editForm.email),
+    );
+    if (v) {
+      setError(v);
+      return;
+    }
+    setError('');
+    setBusy(true);
     try {
-      await api.patch(`/users/${u.id}`, editForm);
+      await api.patch(`/users/${u.id}`, {
+        ...editForm,
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+      });
       setEditId(null);
       setOk(`Datos de ${editForm.name} actualizados.`);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'No se pudo guardar');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -195,7 +237,7 @@ export function Team() {
             required
           />
           <Input
-            placeholder="Contrasena (min. 4)"
+            placeholder="Contrasena (min. 6)"
             type="password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -212,8 +254,8 @@ export function Team() {
             <option value="ADMIN">Administrador</option>
           </select>
           <div className="sm:col-span-2 lg:col-span-4">
-            <Button type="submit">
-              <UserPlus size={16} /> Agregar al equipo
+            <Button type="submit" disabled={busy}>
+              <UserPlus size={16} /> {busy ? 'Agregando...' : 'Agregar al equipo'}
             </Button>
           </div>
         </form>
@@ -329,8 +371,8 @@ export function Team() {
                       <option value="ADMIN">Administrador</option>
                     </select>
                     <div className="flex gap-2 sm:col-span-2">
-                      <Button size="sm" onClick={() => saveEdit(u)}>
-                        Guardar cambios
+                      <Button size="sm" onClick={() => saveEdit(u)} disabled={busy}>
+                        {busy ? 'Guardando...' : 'Guardar cambios'}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setEditId(null)}>
                         Cancelar
@@ -344,13 +386,13 @@ export function Team() {
                   <div className="mt-3 sm:pl-[52px] flex flex-col sm:flex-row gap-2">
                     <Input
                       type="password"
-                      placeholder={`Nueva clave para ${u.name} (min. 4)`}
+                      placeholder={`Nueva clave para ${u.name} (min. 6)`}
                       value={newPass}
                       onChange={(e) => setNewPass(e.target.value)}
                       className="sm:max-w-xs"
                     />
-                    <Button size="sm" onClick={() => saveReset(u)}>
-                      Guardar clave
+                    <Button size="sm" onClick={() => saveReset(u)} disabled={busy}>
+                      {busy ? 'Guardando...' : 'Guardar clave'}
                     </Button>
                     <Button
                       variant="ghost"

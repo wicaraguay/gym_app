@@ -3,6 +3,7 @@ import { Building2, User, ImagePlus, Save, CheckCircle2, Trash2 } from 'lucide-r
 import { api } from '../lib/api';
 import { emitRefresh } from '../lib/events';
 import { compressImage } from '../lib/compressImage';
+import { validateCedulaOrRuc } from '../lib/validation';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -132,6 +133,8 @@ export function Settings() {
   const isAdmin = user?.role === 'ADMIN';
   const [form, setForm] = useState<Form | null>(null);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get('/settings').then((r) => {
@@ -172,9 +175,31 @@ export function Settings() {
   const onSave = async () => {
     if (!form) return;
     setSaved(false);
-    await api.patch('/settings', form);
-    setSaved(true);
-    emitRefresh(); // el menu lateral toma el logo/nombre nuevo al instante
+    // El RUC/cedula del negocio es opcional, pero si se carga debe ser valido.
+    if (form.ruc.trim()) {
+      const v = validateCedulaOrRuc(form.ruc);
+      if (v) {
+        setError(v);
+        return;
+      }
+    }
+    setError('');
+    setSaving(true);
+    try {
+      await api.patch('/settings', {
+        ...form,
+        businessName: form.businessName.trim(),
+        ownerName: form.ownerName.trim(),
+        ruc: form.ruc.trim(),
+        address: form.address.trim(),
+      });
+      setSaved(true);
+      emitRefresh(); // el menu lateral toma el logo/nombre nuevo al instante
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'No se pudieron guardar los cambios.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!form) return <p className="text-slate-400">Cargando...</p>;
@@ -269,7 +294,9 @@ export function Settings() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
         <div className="text-sm">
-          {saved ? (
+          {error ? (
+            <span className="text-danger font-medium">{error}</span>
+          ) : saved ? (
             <span className="inline-flex items-center gap-1.5 text-success font-medium">
               <CheckCircle2 size={16} /> Cambios guardados
             </span>
@@ -282,11 +309,8 @@ export function Settings() {
           )}
         </div>
         {isAdmin && (
-          <Button
-            onClick={onSave}
-            className="w-full sm:w-auto px-6"
-          >
-            <Save size={16} /> Guardar cambios
+          <Button onClick={onSave} className="w-full sm:w-auto px-6" disabled={saving}>
+            <Save size={16} /> {saving ? 'Guardando...' : 'Guardar cambios'}
           </Button>
         )}
       </div>
