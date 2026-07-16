@@ -12,6 +12,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { api } from '../api';
 import { Badge, Field, Button, ErrorText } from '../ui';
+import {
+  validateCedulaOrRuc,
+  validateEmail,
+  validatePhone,
+  splitFullName,
+  firstError,
+} from '../validation';
 import { C, stateColor } from '../theme';
 
 const FILTERS = [
@@ -38,6 +45,7 @@ export function MembersScreen() {
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ identification: '', name: '', phone: '', email: '' });
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
     api
@@ -56,22 +64,34 @@ export function MembersScreen() {
   );
 
   const create = async () => {
+    const name = splitFullName(form.name);
+    const e = firstError(
+      validateCedulaOrRuc(form.identification),
+      name ? null : 'Escribi nombre y apellido (al menos dos palabras).',
+      validatePhone(form.phone),
+      validateEmail(form.email, true),
+    );
+    if (e) {
+      setErr(e);
+      return;
+    }
     setErr('');
-    const tokens = form.name.trim().split(/\s+/).filter(Boolean);
-    const mid = Math.max(1, Math.ceil(tokens.length / 2));
+    setBusy(true);
     try {
       await api.post('/members', {
         identification: form.identification.trim(),
-        firstName: tokens.slice(0, mid).join(' '),
-        lastName: tokens.slice(mid).join(' '),
-        phone: form.phone || undefined,
-        email: form.email || undefined,
+        firstName: name!.firstName,
+        lastName: name!.lastName,
+        phone: form.phone.trim() || undefined,
+        email: form.email.trim() || undefined,
       });
       setForm({ identification: '', name: '', phone: '', email: '' });
       setShowNew(false);
       load();
     } catch (e: any) {
       setErr(e?.response?.data?.message || 'No se pudo crear el cliente');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -200,7 +220,7 @@ export function MembersScreen() {
               autoCapitalize="none"
             />
             <ErrorText>{err}</ErrorText>
-            <Button title="Guardar cliente" onPress={create} />
+            <Button title="Guardar cliente" onPress={create} loading={busy} />
             <Button
               title="Cancelar"
               variant="ghost"

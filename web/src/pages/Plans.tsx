@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { CreditCard, Pencil, Plus, Power, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
+import { validateRequired, validatePrice, firstError } from '../lib/validation';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { Card } from '../components/ui/Card';
@@ -34,6 +35,8 @@ export function Plans() {
   const [editing, setEditing] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState('');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState('');
   const [page, setPage] = useState(1);
   const LIMIT = 8;
 
@@ -44,20 +47,39 @@ export function Plans() {
 
   const onCreate = async (e: FormEvent) => {
     e.preventDefault();
+    const amount = Number(form.amount);
+    const err = firstError(
+      validateRequired(form.name, 'El nombre'),
+      validatePrice(form.price),
+      !Number.isFinite(amount) || amount < 1 ? 'La duracion debe ser al menos 1.' : null,
+    );
+    if (err) {
+      setError(err);
+      return;
+    }
     setError('');
+    setSaving(true);
     try {
-      const payload: any = { name: form.name, price: Number(form.price) };
-      if (form.unit === 'mes') payload.durationMonths = Number(form.amount);
-      else payload.durationDays = Number(form.amount);
+      const payload: any = { name: form.name.trim(), price: Number(form.price) };
+      if (form.unit === 'mes') payload.durationMonths = amount;
+      else payload.durationDays = amount;
       await api.post('/plans', payload);
       setForm({ name: '', price: '', amount: '1', unit: 'mes' });
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error');
+    } finally {
+      setSaving(false);
     }
   };
 
   const savePrice = async (id: string) => {
+    const err = validatePrice(editPrice);
+    if (err) {
+      setEditError(err);
+      return;
+    }
+    setEditError('');
     await api.patch(`/plans/${id}`, { price: Number(editPrice) });
     setEditing(null);
     load();
@@ -137,8 +159,8 @@ export function Plans() {
                 <option value="dia">dia(s)</option>
               </select>
             </div>
-            <Button type="submit">
-              <Plus size={16} /> Crear
+            <Button type="submit" disabled={saving}>
+              <Plus size={16} /> {saving ? 'Creando...' : 'Crear'}
             </Button>
           </form>
           {error && <p className="text-danger text-sm mt-2">{error}</p>}
@@ -165,17 +187,20 @@ export function Plans() {
             </p>
 
             {editing === p.id ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-28"
-                />
-                <Button size="sm" onClick={() => savePrice(p.id)}>
-                  Guardar
-                </Button>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-28"
+                  />
+                  <Button size="sm" onClick={() => savePrice(p.id)}>
+                    Guardar
+                  </Button>
+                </div>
+                {editError && <p className="text-danger text-xs mt-1">{editError}</p>}
               </div>
             ) : (
               <div className="flex items-end justify-between">
@@ -193,6 +218,7 @@ export function Plans() {
                     onClick={() => {
                       setEditing(p.id);
                       setEditPrice(String(p.price));
+                      setEditError('');
                     }}
                     className="inline-flex items-center gap-1 text-xs text-neon-cyan hover:underline"
                   >

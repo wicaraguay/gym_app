@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { emitRefresh } from '../lib/events';
+import { validateAmount } from '../lib/validation';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { Card } from '../components/ui/Card';
@@ -92,6 +93,7 @@ export function MemberDetail() {
   const [startMode, setStartMode] = useState<'hoy' | 'vencio' | 'custom'>('hoy');
   const [customDate, setCustomDate] = useState('');
   const [abono, setAbono] = useState<Record<string, string>>({});
+  const [payingId, setPayingId] = useState<string | null>(null);
   const [method, setMethod] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [freezingId, setFreezingId] = useState<string | null>(null);
@@ -236,8 +238,15 @@ export function MemberDetail() {
     }
   };
 
-  const registerAbono = async (membershipId: string) => {
+  const registerAbono = async (membershipId: string, max: number) => {
+    // El abono debe ser positivo y NO puede superar el saldo pendiente.
+    const err = validateAmount(abono[membershipId] || '', { max, label: 'El abono' });
+    if (err) {
+      setError(err);
+      return;
+    }
     setError('');
+    setPayingId(membershipId);
     try {
       await api.post('/payments', {
         membershipId,
@@ -249,6 +258,8 @@ export function MemberDetail() {
       emitRefresh(); // la campanita suelta al cliente al que se le cobro
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al registrar el abono');
+    } finally {
+      setPayingId(null);
     }
   };
 
@@ -626,8 +637,11 @@ export function MemberDetail() {
                         <option value="EFECTIVO">Efectivo</option>
                         <option value="TRANSFERENCIA">Transferencia</option>
                       </select>
-                      <Button onClick={() => registerAbono(m.id)}>
-                        Cobrar
+                      <Button
+                        onClick={() => registerAbono(m.id, balance)}
+                        disabled={payingId === m.id}
+                      >
+                        {payingId === m.id ? 'Cobrando...' : 'Cobrar'}
                       </Button>
                     </div>
                   </div>

@@ -2,6 +2,13 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, UserPlus, Phone, X } from 'lucide-react';
 import { api } from '../lib/api';
+import {
+  validateCedulaOrRuc,
+  validateEmail,
+  validatePhone,
+  splitFullName,
+  firstError,
+} from '../lib/validation';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -76,6 +83,7 @@ export function Members() {
   const [form, setForm] = useState(EMPTY);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const load = () =>
     api
@@ -94,24 +102,35 @@ export function Members() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // Un solo campo "Nombre completo" -> lo dividimos en nombres/apellidos.
+    const name = splitFullName(form.fullName);
+    const err = firstError(
+      validateCedulaOrRuc(form.identification),
+      name ? null : 'Escribi nombre y apellido (al menos dos palabras).',
+      validatePhone(form.phone),
+      validateEmail(form.email, true),
+    );
+    if (err) {
+      setError(err);
+      return;
+    }
     setError('');
+    setSaving(true);
     try {
-      // Un solo campo "Nombre completo" -> lo dividimos en nombres/apellidos
-      // (primera mitad = nombres, segunda mitad = apellidos).
-      const tokens = form.fullName.trim().split(/\s+/).filter(Boolean);
-      const mid = Math.max(1, Math.ceil(tokens.length / 2));
       await api.post('/members', {
-        identification: form.identification,
-        firstName: tokens.slice(0, mid).join(' '),
-        lastName: tokens.slice(mid).join(' '),
-        phone: form.phone || undefined,
-        email: form.email || undefined,
+        identification: form.identification.trim(),
+        firstName: name!.firstName,
+        lastName: name!.lastName,
+        phone: form.phone.trim() || undefined,
+        email: form.email.trim() || undefined,
       });
       setForm(EMPTY);
       setShowForm(false);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al crear el cliente');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -172,8 +191,8 @@ export function Members() {
             {error && (
               <p className="text-danger text-sm sm:col-span-2">{error}</p>
             )}
-            <Button type="submit" className="w-full sm:col-span-2">
-              Guardar cliente
+            <Button type="submit" className="w-full sm:col-span-2" disabled={saving}>
+              {saving ? 'Guardando...' : 'Guardar cliente'}
             </Button>
           </form>
         </Card>

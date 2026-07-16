@@ -13,6 +13,7 @@ import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { Screen, Card, Badge, Button, Field, ErrorText, Chip } from '../ui';
+import { validateAmount } from '../validation';
 import { C } from '../theme';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -60,14 +61,21 @@ export function MemberDetailScreen() {
   }, []);
 
   const cobrar = async (mem: any) => {
-    const val = Number(amount[mem.id]);
-    if (!val || val <= 0) return;
+    // El abono debe ser positivo y NO puede superar el saldo pendiente.
+    const err = validateAmount(amount[mem.id] || '', {
+      max: Number(mem.balance),
+      label: 'El abono',
+    });
+    if (err) {
+      setError(err);
+      return;
+    }
     setError('');
     setBusy(true);
     try {
       await api.post('/payments', {
         membershipId: mem.id,
-        amount: val,
+        amount: Number(amount[mem.id]),
         method: method[mem.id] || 'EFECTIVO',
       });
       setAmount({ ...amount, [mem.id]: '' });
