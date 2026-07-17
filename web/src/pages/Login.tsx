@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PasswordInput } from '../components/ui/PasswordInput';
+import { InstallButton } from '../components/InstallButton';
 
 interface Branding {
   businessName: string;
@@ -114,6 +115,12 @@ export function Login() {
             {loading ? 'Ingresando...' : 'Ingresar'}
           </Button>
         </form>
+
+        {/* Ofrece instalar la app aca, en el login (antes de entrar). Solo se
+            muestra si el navegador la puede instalar y aun no lo esta. */}
+        <div className="mt-4">
+          <InstallButton />
+        </div>
       </div>
     </div>
   );

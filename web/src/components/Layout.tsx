@@ -17,7 +17,6 @@ import {
 import { api } from '../lib/api';
 import { onRefresh } from '../lib/events';
 import { useAuth } from '../context/AuthContext';
-import { InstallButton } from './InstallButton';
 
 interface NavItem {
   to: string;
@@ -178,10 +177,7 @@ export function Layout() {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-line space-y-1">
-          {/* Solo aparece si la app se puede instalar y aun no lo esta. Vive
-              dentro del admin: un futuro sitio publico NO lo mostraria. */}
-          <InstallButton />
+        <div className="p-3 border-t border-line">
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-danger hover:bg-danger/10 transition-all"
