@@ -17,10 +17,16 @@ export class SettingsService {
   }
 
   // Marca publica para pantallas SIN autenticar (ej. el login).
-  // Devuelve SOLO lo no sensible: nombre y logo. NUNCA ruc, direccion, dueno.
+  // Devuelve SOLO lo no sensible: nombre, logo y color. NUNCA ruc, direccion, dueno.
   async getBranding() {
     const s = await this.get();
-    return { businessName: s.businessName, logoUrl: s.logoUrl };
+    // accentColor NO es sensible: se expone para pintar el login con el color
+    // del gimnasio, antes de autenticar.
+    return {
+      businessName: s.businessName,
+      logoUrl: s.logoUrl,
+      accentColor: s.accentColor,
+    };
   }
 
   async update(dto: UpdateSettingsDto) {

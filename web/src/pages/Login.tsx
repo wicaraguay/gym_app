@@ -7,6 +7,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PasswordInput } from '../components/ui/PasswordInput';
 import { InstallButton } from '../components/InstallButton';
+import { DevCredit } from '../components/DevCredit';
+import { applyAccent } from '../lib/theme';
 
 interface Branding {
   businessName: string;
@@ -27,7 +29,10 @@ export function Login() {
   useEffect(() => {
     api
       .get('/settings/public')
-      .then((r) => setBranding(r.data))
+      .then((r) => {
+        setBranding(r.data);
+        if (r.data.accentColor) applyAccent(r.data.accentColor);
+      })
       .catch(() => setBranding(null));
   }, []);
 
@@ -122,6 +127,9 @@ export function Login() {
           <InstallButton />
         </div>
       </div>
+
+      {/* Credito del desarrollador */}
+      <DevCredit className="absolute inset-x-0 bottom-4 text-center" />
     </div>
   );
 }

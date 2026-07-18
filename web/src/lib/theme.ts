@@ -1,0 +1,43 @@
+// Aplica el color de acento del gimnasio en runtime, pisando la variable CSS
+// --accent (que Tailwind usa para todo lo "neon-cyan"). Asi cada gimnasio pinta
+// la administracion con el color de su marca, sin recompilar.
+
+export const DEFAULT_ACCENT = '#00E5FF';
+const STORAGE_KEY = 'accentColor';
+
+// "#00E5FF" -> "0 229 255"  (formato que espera rgb(var(--accent) / alpha)).
+export function hexToRgbTriplet(hex: string): string | null {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
+}
+
+// Solo pinta el acento en el documento (vista previa en vivo), SIN cachear.
+// Sirve para previsualizar en Configuracion sin persistir un color no guardado.
+export function setAccentVar(hex: string) {
+  const triplet = hexToRgbTriplet(hex);
+  if (!triplet) return;
+  document.documentElement.style.setProperty('--accent', triplet);
+}
+
+// Setea el acento Y lo cachea (para valores CONFIRMADOS: backend o cache).
+// Evita el parpadeo al recargar.
+export function applyAccent(hex: string) {
+  if (!hexToRgbTriplet(hex)) return;
+  setAccentVar(hex);
+  try {
+    localStorage.setItem(STORAGE_KEY, hex);
+  } catch {
+    /* localStorage no disponible: no pasa nada, se usa el default */
+  }
+}
+
+// Ultimo acento conocido (cache local); si no hay, el default.
+export function cachedAccent(): string {
+  try {
+    return localStorage.getItem(STORAGE_KEY) || DEFAULT_ACCENT;
+  } catch {
+    return DEFAULT_ACCENT;
+  }
+}

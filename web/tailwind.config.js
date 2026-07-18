@@ -9,7 +9,9 @@ export default {
         'surface-2': '#1a2231', // inputs / superficies elevadas
         line: '#232d42', // bordes
         neon: {
-          cyan: '#00E5FF',
+          // Acento personalizable por gimnasio: lee la variable CSS --accent
+          // (definida en index.css y actualizada en runtime segun Settings).
+          cyan: 'rgb(var(--accent) / <alpha-value>)',
           magenta: '#FF2E97',
           lime: '#39FF14',
         },
@@ -19,7 +21,7 @@ export default {
       },
       boxShadow: {
         card: '0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4)',
-        'neon-cyan': '0 0 18px rgba(0,229,255,0.30)',
+        'neon-cyan': '0 0 18px rgb(var(--accent) / 0.30)',
         'neon-magenta': '0 0 18px rgba(255,46,151,0.30)',
       },
       fontFamily: {

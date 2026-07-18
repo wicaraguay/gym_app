@@ -1,9 +1,10 @@
 import { ChangeEvent, ReactNode, useEffect, useState } from 'react';
-import { Building2, User, ImagePlus, Save, Trash2 } from 'lucide-react';
+import { Building2, User, ImagePlus, Save, Trash2, Palette } from 'lucide-react';
 import { api } from '../lib/api';
 import { emitRefresh } from '../lib/events';
 import { compressImage } from '../lib/compressImage';
 import { validateCedulaOrRuc } from '../lib/validation';
+import { setAccentVar, DEFAULT_ACCENT } from '../lib/theme';
 import { FieldHint } from '../components/ui/FieldHint';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -11,6 +12,19 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { useAlert } from '../context/ConfirmContext';
 import { useToast } from '../context/ToastContext';
+
+// Colores sugeridos para elegir rapido segun el logo del gimnasio.
+const PRESETS = [
+  { name: 'Cyan', hex: '#00E5FF' },
+  { name: 'Verde', hex: '#22C55E' },
+  { name: 'Lima', hex: '#84CC16' },
+  { name: 'Naranja', hex: '#F97316' },
+  { name: 'Rojo', hex: '#EF4444' },
+  { name: 'Rosa', hex: '#EC4899' },
+  { name: 'Violeta', hex: '#8B5CF6' },
+  { name: 'Azul', hex: '#3B82F6' },
+  { name: 'Amarillo', hex: '#EAB308' },
+];
 
 // Peso aproximado de un data URL base64, en KB.
 function dataUrlKb(dataUrl: string): number {
@@ -129,7 +143,10 @@ interface Form {
   address: string;
   logoUrl: string;
   photoUrl: string;
+  accentColor: string;
 }
+
+type Tab = 'negocio' | 'apariencia';
 
 export function Settings() {
   const { user } = useAuth();
@@ -138,6 +155,7 @@ export function Settings() {
   const isAdmin = user?.role === 'ADMIN';
   const [form, setForm] = useState<Form | null>(null);
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<Tab>('negocio');
 
   useEffect(() => {
     api.get('/settings').then((r) => {
@@ -149,6 +167,7 @@ export function Settings() {
         address: d.address || '',
         logoUrl: d.logoUrl || '',
         photoUrl: d.photoUrl || '',
+        accentColor: d.accentColor || DEFAULT_ACCENT,
       });
     });
   }, []);
@@ -156,28 +175,31 @@ export function Settings() {
   const set = (k: keyof Form, v: string) =>
     setForm((f) => (f ? { ...f, [k]: v } : f));
 
+  // Elegir color: actualiza el form Y previsualiza en vivo toda la admin
+  // (sin cachear: se persiste recien al guardar).
+  const pickColor = (hex: string) => {
+    set('accentColor', hex);
+    setAccentVar(hex);
+  };
+
   const readImage =
     (key: 'logoUrl' | 'photoUrl') =>
     async (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      // El logo se ve chico (max 512px basta); la foto del local un poco mas.
       const maxSize = key === 'logoUrl' ? 512 : 900;
       try {
         set(key, await compressImage(file, { maxSize }));
       } catch {
-        // Si la compresion falla, guarda el original sin bloquear al usuario.
         const reader = new FileReader();
         reader.onload = () => set(key, reader.result as string);
         reader.readAsDataURL(file);
       }
-      // Permite volver a elegir el MISMO archivo despues de quitarlo.
       e.target.value = '';
     };
 
   const onSave = async () => {
     if (!form) return;
-    // El RUC/cedula del negocio es opcional, pero si se carga debe ser valido.
     if (form.ruc.trim()) {
       const v = validateCedulaOrRuc(form.ruc);
       if (v) {
@@ -194,7 +216,7 @@ export function Settings() {
         ruc: form.ruc.trim(),
         address: form.address.trim(),
       });
-      emitRefresh(); // el menu lateral toma el logo/nombre nuevo al instante
+      emitRefresh(); // el menu lateral toma logo/nombre/color nuevo al instante
       toast.success('Configuracion guardada');
     } catch (e: any) {
       notify(e.response?.data?.message || 'No se pudieron guardar los cambios.');
@@ -205,99 +227,196 @@ export function Settings() {
 
   if (!form) return <p className="text-slate-400">Cargando...</p>;
 
+  const TABS: { key: Tab; label: string; icon: any }[] = [
+    { key: 'negocio', label: 'Negocio', icon: Building2 },
+    { key: 'apariencia', label: 'Apariencia', icon: Palette },
+  ];
+
   return (
     <div className="space-y-5">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-white">
           Configuracion
         </h1>
-        <p className="text-slate-400 text-sm">Los datos de tu gimnasio.</p>
+        <p className="text-slate-400 text-sm">Los datos y el estilo de tu gimnasio.</p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2 items-start">
-        {/* Tu gimnasio */}
-        <Card className="p-5">
-          <SectionHeader
-            icon={Building2}
-            title="Tu gimnasio"
-            subtitle="Logo y foto que se muestran en la app"
-          />
-          <div className="flex flex-wrap gap-6 mb-5">
-            <ImagePicker
-              label="Logo"
-              value={form.logoUrl}
-              isAdmin={isAdmin}
-              onPick={readImage('logoUrl')}
-              onRemove={() => set('logoUrl', '')}
-            />
-            <ImagePicker
-              label="Foto del local"
-              value={form.photoUrl}
-              wide
-              isAdmin={isAdmin}
-              onPick={readImage('photoUrl')}
-              onRemove={() => set('photoUrl', '')}
-            />
-          </div>
-          <p className="text-xs text-slate-500 -mt-2 mb-1">
-            Las imagenes se optimizan solas al subirlas (mas livianas). Podes
-            quitarlas o reemplazarlas cuando quieras.
-          </p>
-        </Card>
-
-        {/* Datos del negocio */}
-        <Card className="p-5">
-          <SectionHeader
-            icon={User}
-            title="Datos del negocio"
-            subtitle="Informacion basica (opcional)"
-          />
-          <div className="grid gap-4">
-            <FieldRow
-              label="Nombre del gimnasio"
-              help="Como lo conocen tus clientes. Ejemplo: CrossFit Miraflores."
-            >
-              <Input
-                value={form.businessName}
-                onChange={(e) => set('businessName', e.target.value)}
-                disabled={!isAdmin}
-                placeholder="CrossFit Miraflores"
-              />
-            </FieldRow>
-            <FieldRow label="Nombre del titular (dueño)">
-              <Input
-                value={form.ownerName}
-                onChange={(e) => set('ownerName', e.target.value)}
-                disabled={!isAdmin}
-                placeholder="Juan Perez"
-              />
-            </FieldRow>
-            <FieldRow label="RUC / Cedula">
-              <Input
-                value={form.ruc}
-                onChange={(e) => set('ruc', e.target.value)}
-                disabled={!isAdmin}
-                inputMode="numeric"
-                placeholder="1712345678001"
-              />
-              <FieldHint
-                value={form.ruc}
-                validate={(v) => validateCedulaOrRuc(v)}
-                ok="Numero valido."
-                hint="Cedula (10) o RUC (13). Opcional."
-              />
-            </FieldRow>
-            <FieldRow label="Direccion">
-              <Input
-                value={form.address}
-                onChange={(e) => set('address', e.target.value)}
-                disabled={!isAdmin}
-                placeholder="Av. Principal y Secundaria"
-              />
-            </FieldRow>
-          </div>
-        </Card>
+      {/* Pestanas: cambian de vista (no hay que scrolear) */}
+      <div className="inline-flex gap-1 p-1 rounded-xl bg-surface border border-line">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+              tab === t.key
+                ? 'bg-neon-cyan/10 text-neon-cyan font-medium'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <t.icon size={16} /> {t.label}
+          </button>
+        ))}
       </div>
+
+      {/* ----- Pestana NEGOCIO ----- */}
+      {tab === 'negocio' && (
+        <div className="grid gap-5 lg:grid-cols-2 items-start">
+          <Card className="p-5">
+            <SectionHeader
+              icon={Building2}
+              title="Tu gimnasio"
+              subtitle="Logo y foto que se muestran en la app"
+            />
+            <div className="flex flex-wrap gap-6 mb-5">
+              <ImagePicker
+                label="Logo"
+                value={form.logoUrl}
+                isAdmin={isAdmin}
+                onPick={readImage('logoUrl')}
+                onRemove={() => set('logoUrl', '')}
+              />
+              <ImagePicker
+                label="Foto del local"
+                value={form.photoUrl}
+                wide
+                isAdmin={isAdmin}
+                onPick={readImage('photoUrl')}
+                onRemove={() => set('photoUrl', '')}
+              />
+            </div>
+            <p className="text-xs text-slate-500 -mt-2 mb-1">
+              Las imagenes se optimizan solas al subirlas (mas livianas). Podes
+              quitarlas o reemplazarlas cuando quieras.
+            </p>
+          </Card>
+
+          <Card className="p-5">
+            <SectionHeader
+              icon={User}
+              title="Datos del negocio"
+              subtitle="Informacion basica (opcional)"
+            />
+            <div className="grid gap-4">
+              <FieldRow
+                label="Nombre del gimnasio"
+                help="Como lo conocen tus clientes. Ejemplo: CrossFit Miraflores."
+              >
+                <Input
+                  value={form.businessName}
+                  onChange={(e) => set('businessName', e.target.value)}
+                  disabled={!isAdmin}
+                  placeholder="CrossFit Miraflores"
+                />
+              </FieldRow>
+              <FieldRow label="Nombre del titular (dueño)">
+                <Input
+                  value={form.ownerName}
+                  onChange={(e) => set('ownerName', e.target.value)}
+                  disabled={!isAdmin}
+                  placeholder="Juan Perez"
+                />
+              </FieldRow>
+              <FieldRow label="RUC / Cedula">
+                <Input
+                  value={form.ruc}
+                  onChange={(e) => set('ruc', e.target.value)}
+                  disabled={!isAdmin}
+                  inputMode="numeric"
+                  placeholder="1712345678001"
+                />
+                <FieldHint
+                  value={form.ruc}
+                  validate={(v) => validateCedulaOrRuc(v)}
+                  ok="Numero valido."
+                  hint="Cedula (10) o RUC (13). Opcional."
+                />
+              </FieldRow>
+              <FieldRow label="Direccion">
+                <Input
+                  value={form.address}
+                  onChange={(e) => set('address', e.target.value)}
+                  disabled={!isAdmin}
+                  placeholder="Av. Principal y Secundaria"
+                />
+              </FieldRow>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ----- Pestana APARIENCIA ----- */}
+      {tab === 'apariencia' && (
+        <Card className="p-5 max-w-2xl">
+          <SectionHeader
+            icon={Palette}
+            title="Color de la app"
+            subtitle="Elegi el color que combine con tu logo. Se ve al instante."
+          />
+
+          <p className="text-xs text-slate-400 mb-2">Colores sugeridos</p>
+          <div className="flex flex-wrap gap-2.5 mb-6">
+            {PRESETS.map((p) => {
+              const active =
+                form.accentColor.toLowerCase() === p.hex.toLowerCase();
+              return (
+                <button
+                  key={p.hex}
+                  type="button"
+                  title={p.name}
+                  disabled={!isAdmin}
+                  onClick={() => pickColor(p.hex)}
+                  className={`w-10 h-10 rounded-xl border-2 transition-all disabled:opacity-50 ${
+                    active
+                      ? 'border-white scale-110 shadow-card'
+                      : 'border-line hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: p.hex }}
+                />
+              );
+            })}
+          </div>
+
+          <FieldRow
+            label="Color personalizado"
+            help="O elegi uno exacto para que matchee tu logo."
+          >
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={form.accentColor}
+                disabled={!isAdmin}
+                onChange={(e) => pickColor(e.target.value)}
+                className="w-12 h-10 rounded-lg bg-surface-2 border border-line cursor-pointer disabled:opacity-50"
+              />
+              <span className="text-sm font-mono text-slate-300">
+                {form.accentColor.toUpperCase()}
+              </span>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => pickColor(DEFAULT_ACCENT)}
+                  className="ml-auto text-xs text-slate-400 hover:text-white"
+                >
+                  Restablecer
+                </button>
+              )}
+            </div>
+          </FieldRow>
+
+          {/* Vista previa: usa el color elegido en vivo */}
+          <div className="mt-6 rounded-xl border border-line bg-surface-2/40 p-4">
+            <p className="text-xs text-slate-500 mb-3">Vista previa</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button className="pointer-events-none">Boton principal</Button>
+              <span className="text-neon-cyan font-medium">Texto de acento</span>
+              <span className="px-2.5 py-1 rounded-lg bg-neon-cyan/10 text-neon-cyan text-xs font-medium">
+                Etiqueta
+              </span>
+              <span className="w-8 h-8 rounded-full bg-neon-cyan" />
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
         <p className="text-sm text-slate-400">

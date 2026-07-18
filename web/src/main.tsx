@@ -8,7 +8,12 @@ import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { initErrorTracking } from './lib/reportError';
 import { initPwaInstall } from './lib/pwaInstall';
+import { applyAccent, cachedAccent } from './lib/theme';
 import './index.css';
+
+// Aplica el color de acento cacheado ANTES de renderizar (evita parpadeo).
+// Login y Layout lo refrescan con el valor real del backend al cargar.
+applyAccent(cachedAccent());
 
 // Arranca el envio remoto de errores (solo si hay VITE_SENTRY_DSN).
 initErrorTracking();

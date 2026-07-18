@@ -3,6 +3,12 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Color de acento en formato "R G B". Lo pisa el JS en runtime segun el
+     gimnasio (ver lib/theme.ts). Default = neon cyan #00E5FF. */
+  --accent: 0 229 255;
+}
+
 @layer base {
   body {
     @apply bg-body text-slate-200 font-sans antialiased;
@@ -26,5 +32,5 @@
 }
 
 ::selection {
-  background: rgba(0, 229, 255, 0.25);
+  background: rgb(var(--accent) / 0.25);
 }

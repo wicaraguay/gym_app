@@ -137,5 +137,6 @@ model Settings {
   address      String? // direccion
   logoUrl      String?
   photoUrl     String?
+  accentColor  String   @default("#00E5FF") // color de acento de la UI (por gimnasio)
   updatedAt    DateTime @updatedAt
 }

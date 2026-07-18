@@ -17,6 +17,8 @@ import {
 import { api } from '../lib/api';
 import { onRefresh } from '../lib/events';
 import { useAuth } from '../context/AuthContext';
+import { applyAccent } from '../lib/theme';
+import { DevCredit } from './DevCredit';
 
 interface NavItem {
   to: string;
@@ -101,6 +103,7 @@ export function Layout() {
       .then((r) => {
         setLogo(r.data.logoUrl || null);
         setBusinessName(r.data.businessName || 'CrossFit');
+        if (r.data.accentColor) applyAccent(r.data.accentColor);
       })
       .catch(() => {});
 
@@ -185,6 +188,7 @@ export function Layout() {
             <LogOut size={18} />
             Cerrar sesion
           </button>
+          <DevCredit className="text-center mt-3" />
         </div>
       </aside>
 
