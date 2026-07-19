@@ -138,5 +138,44 @@ model Settings {
   logoUrl      String?
   photoUrl     String?
   accentColor  String   @default("#00E5FF") // color de acento de la UI (por gimnasio)
+  whatsapp     String? // numero de WhatsApp del negocio (para el sitio publico)
   updatedAt    DateTime @updatedAt
+}
+
+// ---------- Contenido editable de la web publica (singleton) ----------
+model SiteContent {
+  id                String   @id @default("singleton")
+  heroTitle         String   @default("")
+  heroSubtitle      String   @default("")
+  heroCtaText       String   @default("Unite ahora")
+  heroImage         String   @default("") // imagen del hero de Inicio (data URL)
+  classes           Json     @default("[]") // [{ title, desc, img }] clases / servicios
+  features          Json     @default("[]") // [{ title, desc }] por que elegirnos
+  coaches           Json     @default("[]") // [{ name, role, photo }] entrenadores
+  testimonial       String   @default("")
+  testimonialAuthor String   @default("")
+  testimonialPhoto  String   @default("") // foto del testimonio (data URL)
+  mission           String   @default("")
+  vision            String   @default("")
+  aboutImage        String   @default("") // imagen del hero de Nosotros
+  missionImage      String   @default("") // imagen junto a la mision
+  visionImage       String   @default("") // imagen junto a la vision
+  scheduleText      String   @default("") // horarios (texto libre)
+  email             String   @default("")
+  instagram         String   @default("")
+  facebook          String   @default("")
+  tiktok            String   @default("")
+  updatedAt         DateTime @updatedAt
+}
+
+// ---------- Mensajes del formulario de contacto (bandeja del admin) ----------
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  contact   String // email o telefono que dejo el visitante
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([read, createdAt])
 }

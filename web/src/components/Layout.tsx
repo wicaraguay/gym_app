@@ -12,6 +12,7 @@ import {
   X,
   Dumbbell,
   Shield,
+  Globe,
   LucideIcon,
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -29,11 +30,12 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutGrid, end: true },
-  { to: '/members', label: 'Clientes', icon: Users },
-  { to: '/plans', label: 'Planes', icon: CreditCard },
-  { to: '/team', label: 'Equipo', icon: Shield, adminOnly: true },
-  { to: '/settings', label: 'Configuracion', icon: SettingsIcon },
+  { to: '/admin', label: 'Dashboard', icon: LayoutGrid, end: true },
+  { to: '/admin/members', label: 'Clientes', icon: Users },
+  { to: '/admin/plans', label: 'Planes', icon: CreditCard },
+  { to: '/admin/team', label: 'Equipo', icon: Shield, adminOnly: true },
+  { to: '/admin/sitio', label: 'Sitio web', icon: Globe, adminOnly: true },
+  { to: '/admin/settings', label: 'Configuracion', icon: SettingsIcon },
 ];
 
 function initials(name?: string) {
@@ -235,7 +237,7 @@ export function Layout() {
                             key={`${n.type}-${n.membershipId}`}
                             onClick={() => {
                               setBellOpen(false);
-                              navigate(`/members/${n.memberId}`);
+                              navigate(`/admin/members/${n.memberId}`);
                             }}
                             className={`w-full text-left px-3 py-2.5 hover:bg-white/5 border-b border-line/40 border-l-2 transition-colors ${
                               cobro ? 'border-l-warning' : 'border-l-neon-cyan'
@@ -263,11 +265,11 @@ export function Layout() {
               )}
             </div>
             <Link
-              to="/profile"
+              to="/admin/profile"
               title="Mi perfil"
               className="flex items-center gap-2.5 rounded-xl px-1.5 py-1 hover:bg-white/5 transition-colors"
             >
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-neon-cyan to-neon-cyan/60 flex items-center justify-center text-xs font-bold text-body">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-neon-cyan to-neon-cyan/60 flex items-center justify-center text-xs font-bold text-on-accent">
                 {initials(user?.name)}
               </div>
               <div className="hidden sm:block leading-tight">

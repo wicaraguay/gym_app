@@ -57,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <button
             onClick={this.reset}
-            className="inline-flex items-center gap-2 rounded-xl bg-neon-cyan px-4 py-2.5 text-sm font-medium text-body transition-all hover:brightness-110"
+            className="inline-flex items-center gap-2 rounded-xl bg-neon-cyan px-4 py-2.5 text-sm font-medium text-on-accent transition-all hover:brightness-110"
           >
             <RotateCcw size={16} /> Reintentar
           </button>

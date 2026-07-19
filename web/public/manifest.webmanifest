@@ -2,7 +2,7 @@
   "name": "Training Loja — Gestion",
   "short_name": "Training Loja",
   "description": "Gestion de gimnasio: clientes, membresias y cobros.",
-  "start_url": "/",
+  "start_url": "/admin",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

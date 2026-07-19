@@ -9,4 +9,6 @@ export class UpdateSettingsDto {
   @IsString() @IsOptional() photoUrl?: string;
   // Color de acento de la UI (ej. "#00E5FF"). Debe ser un hex valido.
   @IsHexColor() @IsOptional() accentColor?: string;
+  // Numero de WhatsApp del negocio (para el boton del sitio publico).
+  @IsString() @IsOptional() whatsapp?: string;
 }

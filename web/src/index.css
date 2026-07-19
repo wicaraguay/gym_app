@@ -7,6 +7,9 @@
   /* Color de acento en formato "R G B". Lo pisa el JS en runtime segun el
      gimnasio (ver lib/theme.ts). Default = neon cyan #00E5FF. */
   --accent: 0 229 255;
+  /* Color de contraste para texto/iconos SOBRE el acento (negro o blanco).
+     Lo calcula el JS segun el brillo del acento. Default para cyan = oscuro. */
+  --accent-contrast: 8 11 18;
 }
 
 @layer base {
@@ -33,4 +36,25 @@
 
 ::selection {
   background: rgb(var(--accent) / 0.25);
+}
+
+/* Reveal al scrollear (web publica): fade + slide suave al entrar en pantalla */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s ease-out,
+    transform 0.7s ease-out;
+  will-change: opacity, transform;
+}
+.reveal.reveal-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

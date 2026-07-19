@@ -26,6 +26,7 @@ export class SettingsService {
       businessName: s.businessName,
       logoUrl: s.logoUrl,
       accentColor: s.accentColor,
+      whatsapp: s.whatsapp,
     };
   }
 

@@ -18,6 +18,8 @@ backups/
 .claude/
 CLAUDE.md
 AGENTS.md
+# Config de MCP (contiene la API key de Stitch): NUNCA subir
+.mcp.json
 
 # Expo (cache local)
 .expo/

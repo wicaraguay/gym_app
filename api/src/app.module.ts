@@ -10,6 +10,7 @@ import { MembershipsModule } from './memberships/memberships.module';
 import { PaymentsModule } from './payments/payments.module';
 import { SettingsModule } from './settings/settings.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { SiteModule } from './site/site.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -28,6 +29,7 @@ import { HealthController } from './health.controller';
     PaymentsModule,
     SettingsModule,
     DashboardModule,
+    SiteModule,
   ],
   controllers: [HealthController],
 })

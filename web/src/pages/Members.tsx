@@ -303,7 +303,7 @@ export function Members() {
             return (
               <button
                 key={m.id}
-                onClick={() => navigate(`/members/${m.id}`)}
+                onClick={() => navigate(`/admin/members/${m.id}`)}
                 className={`flex flex-col gap-3 p-4 rounded-2xl bg-surface border border-line border-l-4 ${accentBorder} hover:bg-white/5 active:bg-white/10 transition-colors text-left`}
               >
                 <div className="flex items-start justify-between gap-2">

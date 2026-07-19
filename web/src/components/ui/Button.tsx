@@ -18,7 +18,7 @@ export function Button({
     md: 'px-4 py-2.5 text-sm',
   };
   const variants = {
-    primary: 'bg-neon-cyan text-body hover:shadow-neon-cyan hover:brightness-110',
+    primary: 'bg-neon-cyan text-on-accent hover:shadow-neon-cyan hover:brightness-110',
     ghost: 'border border-line text-slate-300 hover:bg-white/5 hover:text-white',
     danger: 'bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20',
   };

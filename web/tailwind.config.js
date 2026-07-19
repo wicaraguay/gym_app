@@ -15,6 +15,8 @@ export default {
           magenta: '#FF2E97',
           lime: '#39FF14',
         },
+        // Texto/iconos que van ENCIMA del acento (negro o blanco automatico).
+        'on-accent': 'rgb(var(--accent-contrast) / <alpha-value>)',
         success: '#22c55e',
         warning: '#f59e0b',
         danger: '#ef4444',
@@ -26,6 +28,9 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        // Web publica: titulos condensados y etiquetas monoespaciadas.
+        display: ['Anybody', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       keyframes: {
         'fade-in': {

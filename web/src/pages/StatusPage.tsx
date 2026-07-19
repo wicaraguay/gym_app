@@ -33,8 +33,8 @@ export function StatusPage({ code, title, message, icon: Icon, accent = 'cyan' }
         <p className="mt-1.5 text-sm text-slate-400">{message}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-xl bg-neon-cyan px-4 py-2.5 text-sm font-medium text-body transition-all hover:brightness-110"
+            to="/admin"
+            className="inline-flex items-center gap-2 rounded-xl bg-neon-cyan px-4 py-2.5 text-sm font-medium text-on-accent transition-all hover:brightness-110"
           >
             <Home size={16} /> Volver al inicio
           </Link>

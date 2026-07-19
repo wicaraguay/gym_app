@@ -204,7 +204,7 @@ export function MemberDetail() {
     try {
       await api.delete(`/members/${id}`);
       toast.success('Cliente eliminado.');
-      navigate('/members');
+      navigate('/admin/members');
     } catch (err: any) {
       notify(err.response?.data?.message || 'No se puede eliminar');
     }
@@ -465,7 +465,7 @@ export function MemberDetail() {
   return (
     <div className="space-y-4 sm:space-y-5">
       <Link
-        to="/members"
+        to="/admin/members"
         className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
       >
         <ArrowLeft size={16} /> Clientes
@@ -582,7 +582,7 @@ export function MemberDetail() {
         <Card className="p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-4 min-w-0">
-              <div className="shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-neon-cyan to-neon-cyan/60 flex items-center justify-center text-lg font-bold text-body">
+              <div className="shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-neon-cyan to-neon-cyan/60 flex items-center justify-center text-lg font-bold text-on-accent">
                 {inits}
               </div>
               <div className="min-w-0">

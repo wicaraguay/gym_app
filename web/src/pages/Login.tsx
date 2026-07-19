@@ -42,7 +42,7 @@ export function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/');
+      navigate('/admin');
     } catch {
       setError('Credenciales invalidas');
     } finally {

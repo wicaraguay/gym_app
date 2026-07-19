@@ -15,10 +15,20 @@ export function hexToRgbTriplet(hex: string): string | null {
 
 // Solo pinta el acento en el documento (vista previa en vivo), SIN cachear.
 // Sirve para previsualizar en Configuracion sin persistir un color no guardado.
+// Ademas calcula el color de CONTRASTE (--accent-contrast): texto negro sobre
+// acentos claros, blanco sobre acentos oscuros, para que lo que va encima del
+// acento (botones, etc.) siempre se lea.
 export function setAccentVar(hex: string) {
   const triplet = hexToRgbTriplet(hex);
   if (!triplet) return;
-  document.documentElement.style.setProperty('--accent', triplet);
+  const root = document.documentElement;
+  root.style.setProperty('--accent', triplet);
+  const [r, g, b] = triplet.split(' ').map(Number);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000; // brillo percibido
+  root.style.setProperty(
+    '--accent-contrast',
+    brightness > 150 ? '0 0 0' : '255 255 255',
+  );
 }
 
 // Setea el acento Y lo cachea (para valores CONFIRMADOS: backend o cache).
