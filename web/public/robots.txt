@@ -1,0 +1,10 @@
+# robots.txt — Training Loja
+# Permite indexar la web publica; bloquea el panel privado.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /login
+
+# Cambia el dominio por el de cada gimnasio al desplegar.
+Sitemap: https://trainingloja.vercel.app/sitemap.xml

@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Instagram, Facebook, Mail } from 'lucide-react';
 import { api } from '../lib/api';
 import { applyAccent } from '../lib/theme';
+import { applyPublicSeo } from '../lib/seo';
 import { DevCredit } from '../components/DevCredit';
 import { WhatsappFab } from './WhatsappFab';
 import { PublicData } from './types';
@@ -57,7 +58,15 @@ export function PublicLayout() {
         }
         setData(d);
         if (d.branding?.accentColor) applyAccent(d.branding.accentColor);
-        if (d.branding?.businessName) document.title = d.branding.businessName;
+        applyPublicSeo({
+          businessName: d.branding?.businessName,
+          description: d.content?.heroSubtitle,
+          address: d.branding?.address,
+          whatsapp: d.branding?.whatsapp,
+          email: d.content?.email,
+          instagram: d.content?.instagram,
+          facebook: d.content?.facebook,
+        });
       })
       .catch(() => setData(null));
   }, [isPreview]);

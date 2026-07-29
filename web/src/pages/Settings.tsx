@@ -141,6 +141,7 @@ interface Form {
   ownerName: string;
   ruc: string;
   address: string;
+  whatsapp: string;
   logoUrl: string;
   photoUrl: string;
   accentColor: string;
@@ -165,6 +166,7 @@ export function Settings() {
         ownerName: d.ownerName || '',
         ruc: d.ruc || '',
         address: d.address || '',
+        whatsapp: d.whatsapp || '',
         logoUrl: d.logoUrl || '',
         photoUrl: d.photoUrl || '',
         accentColor: d.accentColor || DEFAULT_ACCENT,
@@ -215,6 +217,7 @@ export function Settings() {
         ownerName: form.ownerName.trim(),
         ruc: form.ruc.trim(),
         address: form.address.trim(),
+        whatsapp: form.whatsapp.trim(),
       });
       emitRefresh(); // el menu lateral toma logo/nombre/color nuevo al instante
       toast.success('Configuracion guardada');
@@ -337,6 +340,18 @@ export function Settings() {
                   onChange={(e) => set('address', e.target.value)}
                   disabled={!isAdmin}
                   placeholder="Av. Principal y Secundaria"
+                />
+              </FieldRow>
+              <FieldRow
+                label="WhatsApp"
+                help="Numero para el boton de WhatsApp de la web publica. Ejemplo: 0991234567."
+              >
+                <Input
+                  value={form.whatsapp}
+                  onChange={(e) => set('whatsapp', e.target.value)}
+                  disabled={!isAdmin}
+                  inputMode="tel"
+                  placeholder="0991234567"
                 />
               </FieldRow>
             </div>
