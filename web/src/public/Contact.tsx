@@ -141,7 +141,7 @@ export function Contact() {
           {/* Sede + horarios */}
           <div className="bg-surface-2 border-t-2 border-neon-cyan/40 p-6 sm:p-8">
             <div className="flex items-start gap-4 mb-5">
-              <MapPin size={26} className="text-neon-cyan shrink-0" />
+              <MapPin size={26} className="text-[#EA4335] shrink-0" />
               <div>
                 <h3 className="font-mono text-xs uppercase tracking-widest text-neon-cyan mb-1">
                   Nuestra sede
@@ -169,7 +169,7 @@ export function Contact() {
                 referrerPolicy="no-referrer-when-downgrade"
               />
               <div className="absolute bottom-3 left-3 flex items-center gap-2 pointer-events-none">
-                <span className="w-2.5 h-2.5 rounded-full bg-neon-cyan animate-pulse" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#EA4335] animate-pulse" />
                 <span className="font-mono text-[10px] uppercase tracking-widest text-white">
                   Aca estamos
                 </span>
