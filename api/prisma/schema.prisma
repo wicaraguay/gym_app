@@ -165,6 +165,13 @@ model SiteContent {
   instagram         String   @default("")
   facebook          String   @default("")
   tiktok            String   @default("")
+  // Seccion "Descarga la app": se muestra en la web SOLO si hay al menos un
+  // link de tienda cargado. Sin links => oculta (nunca queda un boton roto).
+  appPromoTitle     String   @default("") // ej. "Descarga nuestra app"
+  appPromoText      String   @default("") // subtitulo / descripcion breve
+  appPromoImage     String   @default("") // imagen publicitaria (data URL)
+  playStoreUrl      String   @default("") // link Google Play (opcional)
+  appStoreUrl       String   @default("") // link App Store / iOS (opcional)
   updatedAt         DateTime @updatedAt
 }
 

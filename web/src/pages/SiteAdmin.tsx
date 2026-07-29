@@ -14,6 +14,7 @@ import {
   Check,
   ImagePlus,
   Eye,
+  Smartphone,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { emitRefresh } from '../lib/events';
@@ -57,6 +58,11 @@ interface SiteForm {
   instagram: string;
   facebook: string;
   tiktok: string;
+  appPromoTitle: string;
+  appPromoText: string;
+  appPromoImage: string;
+  playStoreUrl: string;
+  appStoreUrl: string;
   whatsapp: string; // vive en Settings
 }
 
@@ -372,6 +378,7 @@ export function SiteAdmin() {
     | 'ventajas'
     | 'coachs'
     | 'nosotros'
+    | 'app'
     | 'contacto'
     | 'mensajes'
   >('portada');
@@ -406,6 +413,11 @@ export function SiteAdmin() {
         instagram: c.instagram || '',
         facebook: c.facebook || '',
         tiktok: c.tiktok || '',
+        appPromoTitle: c.appPromoTitle || '',
+        appPromoText: c.appPromoText || '',
+        appPromoImage: c.appPromoImage || '',
+        playStoreUrl: c.playStoreUrl || '',
+        appStoreUrl: c.appStoreUrl || '',
         whatsapp: r.data.branding?.whatsapp || '',
       });
     });
@@ -478,6 +490,7 @@ export function SiteAdmin() {
     { key: 'ventajas' as const, label: 'Ventajas', icon: Star },
     { key: 'coachs' as const, label: 'Coachs', icon: Users },
     { key: 'nosotros' as const, label: 'Nosotros', icon: Info },
+    { key: 'app' as const, label: 'App', icon: Smartphone },
     { key: 'contacto' as const, label: 'Contacto', icon: Phone },
     { key: 'mensajes' as const, label: 'Mensajes', icon: Inbox },
   ];
@@ -662,6 +675,60 @@ export function SiteAdmin() {
               maxSize={500}
             />
           </div>
+        </Card>
+      )}
+
+      {/* ---------- APP ---------- */}
+      {tab === 'app' && (
+        <Card className="p-5 space-y-4">
+          <p className="font-semibold text-white">Descarga la app</p>
+          <p className="text-xs text-slate-500 -mt-1">
+            Esta seccion aparece en el Inicio de tu web SOLO si cargas al menos un
+            link de tienda. Si dejas ambos vacios, no se muestra (nunca queda un
+            boton roto).
+          </p>
+          <Field label="Titulo">
+            <Input
+              value={form.appPromoTitle}
+              onChange={(e) => set('appPromoTitle', e.target.value)}
+              placeholder="Descarga nuestra app"
+            />
+          </Field>
+          <Field label="Texto / descripcion">
+            <textarea
+              className={TEXTAREA}
+              rows={2}
+              value={form.appPromoText}
+              onChange={(e) => set('appPromoText', e.target.value)}
+              placeholder="Lleva tu entrenamiento en el bolsillo. Descargala y entrena donde quieras."
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Link de Google Play">
+              <Input
+                value={form.playStoreUrl}
+                onChange={(e) => set('playStoreUrl', e.target.value)}
+                placeholder="https://play.google.com/store/apps/..."
+              />
+            </Field>
+            <Field label="Link de App Store (iOS)">
+              <Input
+                value={form.appStoreUrl}
+                onChange={(e) => set('appStoreUrl', e.target.value)}
+                placeholder="https://apps.apple.com/app/..."
+              />
+            </Field>
+          </div>
+          <ImageField
+            label="Imagen publicitaria (opcional)"
+            value={form.appPromoImage}
+            onChange={(v) => set('appPromoImage', v)}
+            maxSize={1200}
+            wide
+          />
+          <p className="text-xs text-slate-500">
+            Ideal: una captura o mockup de la app. Se optimiza sola al subirla.
+          </p>
         </Card>
       )}
 

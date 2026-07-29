@@ -50,6 +50,11 @@ export interface PublicData {
     instagram: string;
     facebook: string;
     tiktok: string;
+    appPromoTitle: string;
+    appPromoText: string;
+    appPromoImage: string;
+    playStoreUrl: string;
+    appStoreUrl: string;
   };
   plans: PublicPlan[];
 }

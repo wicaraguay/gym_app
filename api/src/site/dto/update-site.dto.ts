@@ -22,4 +22,10 @@ export class UpdateSiteDto {
   @IsString() @IsOptional() instagram?: string;
   @IsString() @IsOptional() facebook?: string;
   @IsString() @IsOptional() tiktok?: string;
+  // Seccion "Descarga la app"
+  @IsString() @IsOptional() appPromoTitle?: string;
+  @IsString() @IsOptional() appPromoText?: string;
+  @IsString() @IsOptional() appPromoImage?: string;
+  @IsString() @IsOptional() playStoreUrl?: string;
+  @IsString() @IsOptional() appStoreUrl?: string;
 }

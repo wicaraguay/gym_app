@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Activity, ShieldCheck, Rocket, Quote, ArrowRight, User } from 'lucide-react';
 import { PublicData, PublicItem, PublicCoach, waLink } from './types';
@@ -24,6 +25,50 @@ const FEATURE_FALL: PublicItem[] = [
   { title: 'Equipamiento completo', desc: 'Maquinas y espacio pensados para rendir.' },
   { title: 'Resultados reales', desc: 'Planes a tu medida para lograr tus objetivos.' },
 ];
+
+// Glifos de las tiendas (no vienen en lucide).
+function AppleGlyph({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    </svg>
+  );
+}
+function PlayGlyph({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M3.6 2.3c-.3.2-.5.6-.5 1.1v17.2c0 .5.2.9.5 1.1l9.6-9.7L3.6 2.3zm11 8.3l2.6-2.6L6.6 2.2c-.4-.2-.8-.2-1.1-.1l9.1 8.5zm0 2.8l-9.1 8.5c.3.1.7.1 1.1-.1l10.6-5.8-2.6-2.6zm5-3.3l-2.3-1.3-2.8 2.9 2.8 2.9 2.3-1.3c.8-.5.8-1.4 0-1.9z" />
+    </svg>
+  );
+}
+
+// Badge estilo tienda: fondo negro, glifo + dos lineas ("Disponible en / X").
+function StoreBadge({
+  href,
+  glyph,
+  top,
+  bottom,
+}: {
+  href: string;
+  glyph: ReactNode;
+  top: string;
+  bottom: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-3 rounded-xl bg-black border border-white/25 px-5 py-2.5 text-white hover:border-white/60 transition-colors"
+    >
+      {glyph}
+      <span className="text-left leading-tight">
+        <span className="block text-[10px] uppercase tracking-wide text-slate-300">{top}</span>
+        <span className="block text-base font-semibold -mt-0.5">{bottom}</span>
+      </span>
+    </a>
+  );
+}
 
 export function Home() {
   const { branding: b, content: c } = useOutletContext<PublicData>();
@@ -217,6 +262,63 @@ export function Home() {
                 </p>
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* ===== DESCARGA LA APP (solo si hay al menos un link de tienda) ===== */}
+      {(c.playStoreUrl || c.appStoreUrl) && (
+        <section className="py-20 sm:py-28 px-4 sm:px-6 bg-surface/40">
+          <div className="max-w-7xl mx-auto grid gap-10 md:grid-cols-2 md:items-center">
+            {/* Texto + botones */}
+            <div className="order-2 md:order-1">
+              <span className="font-mono text-xs uppercase tracking-[0.25em] text-neon-cyan block mb-3">
+                Nuestra app
+              </span>
+              <h2 className="font-display font-black uppercase text-3xl sm:text-5xl text-white leading-none mb-4">
+                {c.appPromoTitle || 'Descarga nuestra app'}
+              </h2>
+              <p className="text-slate-300 text-base sm:text-lg leading-relaxed mb-8 max-w-lg">
+                {c.appPromoText ||
+                  'Lleva tu entrenamiento en el bolsillo. Descargala y entrena donde quieras.'}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {c.playStoreUrl && (
+                  <StoreBadge
+                    href={c.playStoreUrl}
+                    glyph={<PlayGlyph />}
+                    top="Disponible en"
+                    bottom="Google Play"
+                  />
+                )}
+                {c.appStoreUrl && (
+                  <StoreBadge
+                    href={c.appStoreUrl}
+                    glyph={<AppleGlyph />}
+                    top="Descargala en"
+                    bottom="App Store"
+                  />
+                )}
+              </div>
+            </div>
+            {/* Imagen publicitaria: se adapta a horizontal o vertical SIN
+                recortar. object-contain + w-auto/max mantiene la proporcion
+                real de la imagen; solo la limita para que no se desborde. */}
+            <div className="order-1 md:order-2 flex justify-center">
+              {c.appPromoImage ? (
+                <img
+                  src={c.appPromoImage}
+                  alt="Nuestra app"
+                  className="max-h-[480px] w-auto max-w-full object-contain rounded-xl"
+                />
+              ) : (
+                <div className="aspect-[4/3] w-full border border-white/10 bg-surface flex items-center justify-center">
+                  <span className="font-display font-black uppercase text-2xl text-slate-700">
+                    {name}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </section>
       )}
