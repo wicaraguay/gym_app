@@ -164,7 +164,7 @@ export function Contact() {
               <iframe
                 title="Mapa"
                 src={mapSrc}
-                className="w-full h-56 grayscale contrast-125 opacity-80"
+                className="w-full h-56"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
