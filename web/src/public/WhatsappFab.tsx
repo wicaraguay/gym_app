@@ -37,15 +37,15 @@ export function WhatsappFab({
       className="group fixed bottom-5 right-5 z-50 flex items-center gap-3"
     >
       {/* Etiqueta que aparece al pasar el mouse (en desktop) */}
-      <span className="hidden md:block max-w-0 overflow-hidden whitespace-nowrap rounded-full bg-[#25D366] text-white text-sm font-semibold opacity-0 transition-all duration-300 group-hover:max-w-[180px] group-hover:opacity-100 group-hover:px-4 group-hover:py-2">
+      <span className="hidden md:block max-w-0 overflow-hidden whitespace-nowrap rounded-full bg-neon-cyan text-on-accent text-sm font-semibold opacity-0 transition-all duration-300 group-hover:max-w-[180px] group-hover:opacity-100 group-hover:px-4 group-hover:py-2">
         Escribinos
       </span>
 
       <span className="relative flex h-16 w-16 items-center justify-center">
         {/* Anillo pulsante para llamar la atencion */}
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#25D366] opacity-40" />
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-cyan opacity-40" />
         {/* Boton solido */}
-        <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/30 transition-transform group-hover:scale-105 group-active:scale-95">
+        <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-neon-cyan text-on-accent shadow-lg shadow-black/30 transition-transform group-hover:scale-105 group-active:scale-95">
           <WhatsappGlyph size={32} />
         </span>
       </span>
